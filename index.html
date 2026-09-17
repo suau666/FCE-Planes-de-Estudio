@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planes de Estudio · FCE UBA</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div id="loading-screen" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;gap:10px;transition:background .3s;">
+  <div class="loader-dot" style="animation-delay:-.32s"></div>
+  <div class="loader-dot" style="animation-delay:-.16s"></div>
+  <div class="loader-dot"></div>
+</div>
+
+<div class="topbar">
+  <span class="usuario" id="usuario"></span>
+  <div class="theme-switcher" id="theme-switcher"></div>
+</div>
+
+<div id="app" style="display:none">
+<div class="container">
+
+  <header>
+    <h1 id="titulo"></h1>
+    <p id="subtitulo"></p>
+  </header>
+
+  <nav class="carrera-tabs" id="carrera-tabs"></nav>
+
+  <div class="stats-row">
+    <div class="stats" id="stats"></div>
+    <button class="planner-btn" id="planner-btn">✦ Planificar<br>cuatrimestres</button>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot pending"></div> Pendiente</div>
+    <div class="legend-item"><div class="legend-dot available"></div> Puedo cursar</div>
+    <div class="legend-item"><div class="legend-dot regular"></div> Regular</div>
+    <div class="legend-item"><div class="legend-dot approved"></div> Aprobada</div>
+  </div>
+
+  <div id="sin-plan" class="sin-plan" style="display:none">
+    <h2>Plan pendiente de carga</h2>
+    <p>
+      Todavía no cargué las materias ni las correlativas de esta carrera.<br>
+      Se completan en <code>js/data/</code> — las instrucciones están en
+      <code>index.js</code>.<br><br>
+      Mientras tanto, el progreso que marques en las otras carreras ya cuenta
+      acá: las materias compartidas se identifican por código.
+    </p>
+  </div>
+
+  <div id="malla">
+    <div id="tramos"></div>
+
+    <div class="ciclo-wrapper">
+      <div class="ciclo-header">Ciclo Profesional</div>
+      <div class="ciclo-body">
+        <svg id="arrows-svg"></svg>
+        <div class="ciclo-grid" id="ciclo-grid"></div>
+      </div>
+    </div>
+
+    <div class="optativas-float" id="optativas-wrap">
+      <span class="optativas-float-label">Optativas</span>
+      <div id="optativas-row"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+<div class="save-indicator" id="save-indicator"></div>
+
+<div id="planner-overlay" class="planner-overlay" style="display:none">
+  <div class="planner-modal">
+    <div class="planner-head">
+      <h2>Planificador <span>·</span> Cuatrimestres</h2>
+      <div class="planner-actions">
+        <div class="auto-menu-wrap" id="auto-menu-wrap">
+          <button class="primary" id="auto-toggle">✦ Auto-acomodar</button>
+          <div class="auto-menu" id="auto-menu" style="display:none">
+            <div class="auto-menu-label">Materias por cuatri</div>
+            <div class="auto-opt-row">
+              <button class="auto-opt" data-n="2">2</button>
+              <button class="auto-opt active" data-n="3">3</button>
+            </div>
+            <label class="auto-check"><input type="checkbox" id="auto-intensivos"> Incluir intensivos</label>
+            <button class="auto-go" id="auto-go">Acomodar</button>
+          </div>
+        </div>
+        <button id="planner-clear">Limpiar</button>
+        <button id="planner-close">✕ Cerrar</button>
+      </div>
+    </div>
+    <div class="planner-body">
+      <div>
+        <div class="planner-section-label">Materias restantes <span id="pool-count"></span> · arrastrá cada una a un período</div>
+        <div class="planner-pool" id="planner-pool"></div>
+      </div>
+      <div>
+        <div class="planner-section-label">Períodos · cuatrimestres (máx. 4) e intensivos (máx. 2) · doble click en una materia para devolverla</div>
+        <div class="planner-periods" id="planner-periods"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="planner-toast" id="planner-toast"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "fce-planes",
+  "version": "1.0.0",
+  "description": "Planes de estudio interactivos de las carreras de FCE · UBA",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "start": "python -m http.server 8080"
+  }
+}

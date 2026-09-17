@@ -1,0 +1,43 @@
+/* Paletas. Todo el resto del CSS consume estas variables. */
+
+:root {
+  --bg:#0a0a0f; --surface:#13131f; --border:#1e1e30;
+  --pending-bg:#111120; --pending-border:#252540; --pending-text:#3a3a58;
+  --regular-bg:#1a1500; --regular-border:#e6b800; --regular-text:#e6b800;
+  --approved-bg:#001a0a; --approved-border:#2ecc71; --approved-text:#2ecc71;
+  --available-bg:#15151f; --available-border:#d0d0e8; --available-text:#d0d0e8;
+  --accent:#ff6b35; --text-main:#c0c0d0; --text-sub:#3a3a5a;
+  --stat-label-color:#3a3a5a; --header-color:#fff;
+}
+body.theme-white {
+  --bg:#f0f0f0; --surface:#fff; --border:#d5d5e0;
+  --pending-bg:#e8e8f0; --pending-border:#b0b0c8; --pending-text:#8888a8;
+  --regular-bg:#fffbe6; --regular-border:#c8a000; --regular-text:#996600;
+  --approved-bg:#e6f9ee; --approved-border:#22a55a; --approved-text:#1a7a44;
+  --available-bg:#f8f8ff; --available-border:#555580; --available-text:#333360;
+  --accent:#e85520; --text-main:#222230; --text-sub:#8888a0;
+  --stat-label-color:#9090a8; --header-color:#111120;
+}
+body.theme-aqua {
+  --bg:#e8f7f5; --surface:#fff; --border:#b8ddd9;
+  --pending-bg:#dff0ee; --pending-border:#9fcbc7; --pending-text:#6aaba6;
+  --regular-bg:#fffbe6; --regular-border:#c8a000; --regular-text:#8a6d00;
+  --approved-bg:#e0f5e9; --approved-border:#1fa055; --approved-text:#186640;
+  --available-bg:#f0fffe; --available-border:#2a9090; --available-text:#1a6060;
+  --accent:#0d7a72; --text-main:#1a3a38; --text-sub:#6a9a96;
+  --stat-label-color:#6a9a96; --header-color:#0d3a36;
+}
+body.theme-cream {
+  --bg:#f5f0e8; --surface:#faf7f0; --border:#ddd5c0;
+  --pending-bg:#ede8de; --pending-border:#bdb098; --pending-text:#9a8e78;
+  --regular-bg:#fff8e0; --regular-border:#c08000; --regular-text:#7a5200;
+  --approved-bg:#e6f2e8; --approved-border:#2a9050; --approved-text:#1a6035;
+  --available-bg:#f8f4ec; --available-border:#5a5040; --available-text:#3a3028;
+  --accent:#c05020; --text-main:#3a3028; --text-sub:#9a8e78;
+  --stat-label-color:#9a8e78; --header-color:#2a2018;
+}
+
+.swatch-dark  { background:#0a0a0f; border-color:#444; }
+.swatch-white { background:#f0f0f0; border-color:#ccc; }
+.swatch-aqua  { background:#7ecece; border-color:#5aafaf; }
+.swatch-cream { background:#f5e6cc; border-color:#c8b090; }
