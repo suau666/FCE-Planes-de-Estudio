@@ -109,11 +109,22 @@ export function cycleEstado(estado) {
        : 'available';
 }
 
-// Flechas del ciclo profesional, derivadas de `prereqs` — una sola fuente de
-// verdad, así el dibujo no puede desincronizarse de la regla que se aplica.
-// `arrowOrder` sólo reordena (el orden decide el reparto horizontal).
+// Flechas del ciclo profesional.
+//
+// Por defecto salen de `prereqs`, así el dibujo no puede desincronizarse de la
+// regla que se aplica, y `arrowOrder` sólo las reordena (el orden decide el
+// reparto horizontal). Una carrera puede en cambio declarar `arrows`: ahí manda
+// esa lista tal cual, en ese orden. Lo usa Actuario, que trae el dibujo hecho a
+// mano de su app original.
 export function arrowsDe(carrera) {
   const enCiclo = id => carrera.materias[id]?.tramo === 3 && !carrera.materias[id].optional;
+
+  if (carrera.arrows) {
+    return carrera.arrows
+      .filter(([a, b]) => enCiclo(a) && enCiclo(b))
+      .map(([a, b]) => [Number(a), Number(b)]);
+  }
+
   const derivadas = [];
   for (const id in carrera.materias) {
     if (!enCiclo(id)) continue;

@@ -67,21 +67,45 @@ export default {
     opt2: { label: 'Optativa 2', optional: true },
   },
 
-  // Orden de dibujo de las flechas: controla el reparto horizontal de
-  // salidas/entradas cuando una materia tiene varias. Las flechas en sí
-  // se derivan de `prereqs`; esto sólo las ordena.
-  arrowOrder: [
-    [544, 752], [544, 751], [602, 751],
-    [601, 753], [601, 758], [601, 755], [601, 279],
-    [279, 548], [602, 548],
+  // Flechas del ciclo, copiadas tal cual de la app original de Actuario: es un
+  // dibujo hecho a mano y el orden decide el reparto horizontal (la primera
+  // sale y entra más a la izquierda). Ojo: no son exactamente las correlativas
+  // que declara `prereqs` — la app original dibujaba 601→548 y 601→603, y no
+  // dibujaba 601→279 ni 602→548. Queda así a propósito; si el plan real dice
+  // otra cosa, hay que corregir `prereqs` y esta lista juntas.
+  arrows: [
+    // 752 ← 544
+    [544, 752],
+    // 751 ← 544, 602
+    [544, 751], [602, 751],
+    // 601 sale de izq. a der. en este orden: 753, 758, 755, 548, 603
+    [601, 753], [601, 758], [601, 755], [601, 548], [601, 603],
+    // 548 ← 279 (después de 601)
+    [279, 548],
+    // 753 entra de izq. a der.: 752, 751, 601
     [752, 753], [751, 753],
+    // 755 entra: 752, 751 (601 ya está arriba)
     [752, 755], [751, 755],
+    // 758 ← 751
     [751, 758],
+    // 754 ← 753
     [753, 754],
+    // 756 ← 754
     [754, 756],
+    // 755 sale de izq. a der.: 728, 757
     [755, 728], [755, 757],
+    // 754 sale: 757, 728
     [754, 757], [754, 728],
+    // 756 → 728
     [756, 728],
+    // 717 ← 758 (izq.), 757 (der.), 746 (horizontal)
     [758, 717], [757, 717], [746, 717],
   ],
+
+  // Las tres que no salen por abajo y entran por arriba.
+  arrowShapes: {
+    '754-757': 'arco',        // pasa por encima de 756
+    '754-756': 'lateral',
+    '746-717': 'horizontal',
+  },
 };

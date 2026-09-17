@@ -23,23 +23,31 @@ export function drawArrows(carrera, estados) {
     .some(c => document.body.classList.contains(c));
   const cPend = claro ? 'rgba(100,105,140,.65)' : 'rgba(130,130,185,.85)';
   const cAppr = claro ? 'rgba(18,135,65,.70)'   : 'rgba(46,204,113,.75)';
+  const cReg  = claro ? 'rgba(200,160,0,.75)'   : 'rgba(230,184,0,.75)';
 
   const defs = document.createElementNS(NS, 'defs');
   defs.appendChild(marcador('ad', cPend));
   defs.appendChild(marcador('ao', cAppr));
+  defs.appendChild(marcador('ar', cReg));
   svg.appendChild(defs);
 
   const rect = el => {
     const r = el.getBoundingClientRect();
     const ox = pRect.left, oy = pRect.top;
     return { l: r.left - ox, r: r.right - ox, t: r.top - oy, b: r.bottom - oy,
-             cx: r.left - ox + r.width / 2, w: r.width };
+             cx: r.left - ox + r.width / 2, cy: r.top - oy + r.height / 2,
+             w: r.width, h: r.height };
   };
+
+  // Flechas con recorrido propio: no salen por abajo y entran por arriba, así
+  // que quedan fuera del reparto horizontal. Las declara `arrowShapes`.
+  const formas = carrera.arrowShapes || {};
 
   // Orden de salidas de cada origen y de entradas de cada destino: define el
   // reparto horizontal para que dos flechas no se pisen.
   const salidas = {}, entradas = {};
   flechas.forEach(([f, t]) => {
+    if (formas[`${f}-${t}`]) return;
     (salidas[f] ??= []).push(t);
     (entradas[t] ??= []).push(f);
   });
@@ -62,32 +70,62 @@ export function drawArrows(carrera, estados) {
 
     const f = rect(fEl), t = rect(tEl);
     const hint = hints[`${fId}-${tId}`] || {};
+    const forma = formas[`${fId}-${tId}`];
 
-    const x1 = hint.from !== undefined
-      ? f.l + f.w * hint.from
-      : reparto(f, t.cx, salidas[fId].indexOf(tId), salidas[fId].length);
-    const y1 = f.b;
+    let x1, y1, x2, y2, c1x, c1y, c2x, c2y;
 
-    const x2 = hint.to !== undefined
-      ? t.l + t.w * hint.to
-      : reparto(t, f.cx, entradas[tId].indexOf(fId), entradas[tId].length);
-    const y2 = t.t + MLEN;
+    if (forma === 'arco') {
+      // Sale por arriba a la derecha, pasa por encima de lo que haya en el
+      // medio y entra por el costado izquierdo del destino.
+      x1 = f.r;         y1 = f.t + f.h * 0.28;
+      x2 = t.l + MLEN;  y2 = t.t + t.h * 0.35;
+      const alto = Math.min(f.t, t.t) - 44;
+      c1x = f.r + 52; c1y = alto;
+      c2x = t.l - 30; c2y = alto;
+    } else if (forma === 'lateral') {
+      // Sale por abajo a la derecha y entra por el costado izquierdo.
+      x1 = f.r;         y1 = f.b - f.h * 0.28;
+      x2 = t.l + MLEN;  y2 = t.cy;
+      const g = Math.max((x2 - x1) * 0.4, 20);
+      c1x = x1 + g; c1y = y1; c2x = x2 - g; c2y = y2;
+    } else if (forma === 'horizontal') {
+      // Derecha → izquierda, a la misma altura.
+      x1 = f.r;         y1 = f.cy;
+      x2 = t.l + MLEN;  y2 = t.cy;
+      const g = Math.max((x2 - x1) * 0.3, 20);
+      c1x = x1 + g; c1y = y1; c2x = x2 - g; c2y = y2;
+    } else {
+      x1 = hint.from !== undefined
+        ? f.l + f.w * hint.from
+        : reparto(f, t.cx, salidas[fId].indexOf(tId), salidas[fId].length);
+      y1 = f.b;
 
-    const dx = x2 - x1, dy = y2 - y1;
-    const tension = Math.max(dy * 0.15, 12);
+      x2 = hint.to !== undefined
+        ? t.l + t.w * hint.to
+        : reparto(t, f.cx, entradas[tId].indexOf(fId), entradas[tId].length);
+      y2 = t.t + MLEN;
 
-    const aprobada = estados[keyOf(carrera, fId)] === 'approved';
+      const dx = x2 - x1, dy = y2 - y1;
+      const tension = Math.max(dy * 0.15, 12);
+      c1x = x1 + dx * 0.1; c1y = y1 + tension;
+      c2x = x2 - dx * 0.1; c2y = y2 - tension;
+    }
+
+    const estado = estados[keyOf(carrera, fId)];
+    const color = estado === 'approved' ? cAppr : estado === 'regular' ? cReg : cPend;
+    const marker = estado === 'approved' ? 'ao' : estado === 'regular' ? 'ar' : 'ad';
+
     const path = document.createElementNS(NS, 'path');
     path.setAttribute('d',
       `M${x1.toFixed(1)},${y1.toFixed(1)} ` +
-      `C${(x1 + dx * 0.1).toFixed(1)},${(y1 + tension).toFixed(1)} ` +
-      `${(x2 - dx * 0.1).toFixed(1)},${(y2 - tension).toFixed(1)} ` +
+      `C${c1x.toFixed(1)},${c1y.toFixed(1)} ` +
+      `${c2x.toFixed(1)},${c2y.toFixed(1)} ` +
       `${x2.toFixed(1)},${y2.toFixed(1)}`);
-    path.setAttribute('stroke', aprobada ? cAppr : cPend);
+    path.setAttribute('stroke', color);
     path.setAttribute('stroke-width', '1.5');
     path.setAttribute('fill', 'none');
     path.setAttribute('stroke-linecap', 'round');
-    path.setAttribute('marker-end', aprobada ? 'url(#ao)' : 'url(#ad)');
+    path.setAttribute('marker-end', `url(#${marker})`);
     svg.appendChild(path);
   }
 }

@@ -128,7 +128,8 @@ test('Actuario y Sistemas comparten materias por código', () => {
 // ── Flechas ──────────────────────────────────────────────────────────────────
 
 test('las flechas se derivan de las correlativas del ciclo', () => {
-  for (const carrera of CARRERAS.filter(c => c.completo)) {
+  // Actuario no: trae la lista dibujada a mano de su app original.
+  for (const carrera of CARRERAS.filter(c => c.completo && !c.arrows)) {
     const flechas = arrowsDe(carrera);
     const esperadas = [];
     for (const id in carrera.materias) {
@@ -142,6 +143,39 @@ test('las flechas se derivan de las correlativas del ciclo', () => {
       [...flechas.map(([a, b]) => `${a}-${b}`)].sort(),
       esperadas.sort(),
       carrera.id);
+  }
+});
+
+// Las flechas de la app original de actuario-plandeestudios (su `arrowDefs`).
+// Si esto cambia, el dibujo deja de ser el que hizo Lautaro a mano.
+const ARROWS_ORIGINALES_ACTUARIO = [
+  [544, 752],
+  [544, 751], [602, 751],
+  [601, 753], [601, 758], [601, 755], [601, 548], [601, 603],
+  [279, 548],
+  [752, 753], [751, 753],
+  [752, 755], [751, 755],
+  [751, 758],
+  [753, 754],
+  [754, 756],
+  [755, 728], [755, 757],
+  [754, 757], [754, 728],
+  [756, 728],
+  [758, 717], [757, 717], [746, 717],
+];
+
+test('Actuario dibuja exactamente las flechas de su app original, en el mismo orden', () => {
+  assert.deepEqual(arrowsDe(actuario), ARROWS_ORIGINALES_ACTUARIO);
+});
+
+test('las tres flechas con recorrido propio de Actuario siguen declaradas', () => {
+  assert.deepEqual(actuario.arrowShapes, {
+    '754-757': 'arco',
+    '754-756': 'lateral',
+    '746-717': 'horizontal',
+  });
+  for (const k of Object.keys(actuario.arrowShapes)) {
+    assert.ok(arrowsDe(actuario).some(([a, b]) => `${a}-${b}` === k), k);
   }
 });
 
