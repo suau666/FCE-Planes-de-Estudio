@@ -1,10 +1,16 @@
--- Esquema para Postgres / Supabase.
+-- Esquema para Neon, con Neon Auth (Better Auth administrado) y Data API.
+--
+-- Antes de correrlo, en la consola de Neon: activar Auth y Data API. Eso crea
+-- el esquema `neon_auth` (usuarios), la función `auth.user_id()` y los roles
+-- `authenticated` y `anonymous` que usa este archivo.
 --
 -- Idea general: el progreso se guarda por CÓDIGO de materia, no por carrera.
 -- Es como ya funciona la app: aprobar 241 vale para las 5 carreras. Por eso
 -- `progreso` no tiene carrera_id — la carrera del usuario está en `perfiles`.
 --
 -- Orden: correr este archivo y después db/seed.sql (npm run db:seed lo genera).
+-- El navegador habla directo con el Data API; el RLS de abajo es lo único que
+-- separa el progreso de cada uno, así que no hay backend propio.
 
 -- ── Catálogo (lo carga el seed, es igual para todos) ────────────────────────
 
@@ -41,11 +47,11 @@ create table if not exists correlativas (
 );
 
 -- ── Usuarios ────────────────────────────────────────────────────────────────
--- `perfiles.id` apunta a auth.users de Supabase. Si el login termina siendo
--- otro, cambiar solo esta referencia.
+-- `perfiles.id` es el id del usuario de Neon Auth (uuid en neon_auth."user").
+-- `auth.user_id()` devuelve ese mismo id como texto, de ahí los ::text abajo.
 
 create table if not exists perfiles (
-  id         uuid primary key references auth.users(id) on delete cascade,
+  id         uuid primary key references neon_auth."user"(id) on delete cascade,
   carrera_id text references carreras(id),
   tema       text not null default 'dark',
   creado_en  timestamptz not null default now()
@@ -82,13 +88,16 @@ alter table progreso           enable row level security;
 alter table progreso_optativas enable row level security;
 
 create policy "cada uno su perfil" on perfiles
-  for all using (auth.uid() = id) with check (auth.uid() = id);
+  for all to authenticated
+  using (auth.user_id() = id::text) with check (auth.user_id() = id::text);
 
 create policy "cada uno su progreso" on progreso
-  for all using (auth.uid() = usuario_id) with check (auth.uid() = usuario_id);
+  for all to authenticated
+  using (auth.user_id() = usuario_id::text) with check (auth.user_id() = usuario_id::text);
 
 create policy "cada uno sus optativas" on progreso_optativas
-  for all using (auth.uid() = usuario_id) with check (auth.uid() = usuario_id);
+  for all to authenticated
+  using (auth.user_id() = usuario_id::text) with check (auth.user_id() = usuario_id::text);
 
 alter table carreras         enable row level security;
 alter table materias         enable row level security;
@@ -100,10 +109,19 @@ create policy "catálogo público" on materias         for select using (true);
 create policy "catálogo público" on carrera_materias for select using (true);
 create policy "catálogo público" on correlativas     for select using (true);
 
+-- El Data API además necesita los grants: el RLS filtra filas, el grant
+-- habilita la tabla.
+grant usage on schema public to anonymous, authenticated;
+grant select on carreras, materias, carrera_materias, correlativas
+  to anonymous, authenticated;
+grant select, insert, update, delete on perfiles, progreso, progreso_optativas
+  to authenticated;
+
 -- ── Estadísticas ────────────────────────────────────────────────────────────
 -- Las vistas salen agregadas: nadie ve el progreso de otro, sólo los totales.
 -- `security_invoker = off` hace que corran con los permisos del dueño de la
--- vista, salteando el RLS de `progreso` a propósito.
+-- vista (el dueño de las tablas, que no pasa por RLS), salteando el RLS de
+-- `progreso` a propósito. Correr el archivo con el rol dueño (neondb_owner).
 
 create or replace view estadisticas_carreras
 with (security_invoker = off) as
@@ -145,4 +163,4 @@ left join progreso pr on pr.usuario_id = p.id and pr.codigo = m.codigo
 group by m.codigo, m.nombre
 order by porcentaje_aprobado nulls last;
 
-grant select on estadisticas_carreras, estadisticas_materias to anon, authenticated;
+grant select on estadisticas_carreras, estadisticas_materias to anonymous, authenticated;

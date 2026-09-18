@@ -1,8 +1,8 @@
 // Sesión del usuario.
 //
 // Por ahora hay un único usuario anónimo, con el progreso en este dispositivo.
-// La interfaz ya es la definitiva para que enchufar el login real (Supabase
-// Auth con magic link, Google, lo que sea) no toque el resto de la app:
+// La interfaz ya es la definitiva para que enchufar el login real (Neon Auth
+// con mail, Google, lo que sea) no toque el resto de la app:
 // alcanza con que `getUser()` devuelva un usuario con id y que
 // `storage/index.js` le dé el adapter remoto.
 

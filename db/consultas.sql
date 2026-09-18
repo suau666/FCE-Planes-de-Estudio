@@ -1,5 +1,5 @@
 -- Las preguntas que queremos poder responder. Se corren tal cual en el editor
--- SQL de Supabase.
+-- SQL de Neon.
 
 -- ── Cuánta gente hay en cada carrera ────────────────────────────────────────
 select titulo, inscriptos
