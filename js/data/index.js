@@ -11,12 +11,13 @@
 // código y el progreso se comparte entre carreras.
 
 import actuario from './actuario.js';
-import sistemas from './sistemas.js';
-import contador from './contador.js';
 import administracion from './administracion.js';
+import contador from './contador.js';
 import economia from './economia.js';
+import sistemas from './sistemas.js';
 
-export const CARRERAS = [actuario, sistemas, contador, administracion, economia];
+// Orden alfabético: es el del selector y el de la base de datos.
+export const CARRERAS = [actuario, administracion, contador, economia, sistemas];
 
 const byId = Object.fromEntries(CARRERAS.map(c => [c.id, c]));
 
