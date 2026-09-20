@@ -152,7 +152,7 @@ export function aFilas(uid, doc) {
   const perfil = {
     id: uid,
     carrera_id: doc.carreraActiva || null,
-    tema: doc.tema || 'dark',
+    tema: doc.tema || 'white',
   };
 
   // Dos como máximo: lo mismo que pide el formulario y que cuida la base.

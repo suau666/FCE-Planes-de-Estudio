@@ -19,7 +19,8 @@ import { hayNeon } from './config.js';
 let carrera = null;
 
 // ── Temas ────────────────────────────────────────────────────────────────────
-const TEMAS = ['dark', 'white', 'aqua', 'cream'];
+// El blanco es el predeterminado, así que va primero.
+const TEMAS = ['white', 'dark', 'aqua', 'cream'];
 
 function aplicarTema(nombre) {
   document.body.className = nombre === 'dark' ? '' : `theme-${nombre}`;
@@ -68,10 +69,6 @@ function irA(id) {
   document.getElementById('titulo').innerHTML =
     `${carrera.titulo} <span>·</span> Plan de Estudios`;
   document.getElementById('subtitulo').textContent = `${carrera.nombre} — FCE · UBA`;
-
-  const url = new URL(location);
-  url.searchParams.set('c', carrera.id);
-  history.replaceState(null, '', url);
 
   const hayPlan = carrera.completo;
   document.getElementById('malla').style.display = hayPlan ? 'block' : 'none';
@@ -229,6 +226,15 @@ function carreraDeArranque() {
   return store.carreras?.[0] || store.carreraActiva;
 }
 
+// La URL no sigue a la carrera que se mira: siempre abre la principal. Si
+// viene un ?c= de un link viejo, se limpia para que no confunda.
+function limpiarUrlDeCarrera() {
+  const url = new URL(location);
+  if (!url.searchParams.has('c')) return;
+  url.searchParams.delete('c');
+  history.replaceState(null, '', url);
+}
+
 // Después de entrar o salir, el progreso es otro: hay que traerlo y redibujar.
 async function recargarProgreso() {
   const { subido, error } = await cargar();
@@ -346,6 +352,29 @@ function initAuthUI() {
     } finally {
       $('auth-submit').disabled = false;
     }
+  });
+}
+
+// ── Modal de "listo" ─────────────────────────────────────────────────────────
+// Cuando algo sale bien y conviene salir de la pantalla donde se estaba (la
+// contraseña, por ejemplo), el cartel va en su propio modal: así no queda un
+// mensaje verde perdido entre campos que ya no hacen falta.
+
+const TILDE = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`;
+
+function mostrarExito(titulo, texto) {
+  $('exito-tilde').innerHTML = TILDE;
+  $('exito-titulo').textContent = titulo;
+  $('exito-texto').textContent = texto;
+  abrirOverlay($('exito-overlay'));
+}
+
+function initExito() {
+  $('exito-cerrar').addEventListener('click', () => cerrarOverlay($('exito-overlay')));
+  $('exito-overlay').addEventListener('click', e => {
+    if (e.target === $('exito-overlay')) cerrarOverlay($('exito-overlay'));
   });
 }
 
@@ -491,16 +520,6 @@ function cerrarBorrar() {
   $('borrar-form').reset();
 }
 
-async function salirDeLaCuenta() {
-  try {
-    await signOut();
-  } catch (err) {
-    indicador(`✗ ${mensajeDeError(err)}`, 'error', 6000);
-  }
-  cerrarCuenta();
-  await recargarProgreso();
-}
-
 function initCuentaUI() {
   initOjos($('clave-form'));
 
@@ -535,7 +554,6 @@ function initCuentaUI() {
     abrirClave($('cuenta-clave-btn').dataset.tiene !== 'si');
   });
 
-  $('cuenta-salir').addEventListener('click', salirDeLaCuenta);
   $('cuenta-eliminar').addEventListener('click', () => {
     cerrarCuenta();
     abrirBorrar();
@@ -558,9 +576,11 @@ function initCuentaUI() {
     $('borrar-error').textContent = '';
     try {
       await eliminarCuenta();
-      $('borrar-ok').textContent = 'Cuenta eliminada.';
       cerrarBorrar();
       await recargarProgreso();
+      mostrarExito('Cuenta eliminada',
+        'Se borró tu cuenta y todo tu progreso. Seguís pudiendo usar la app sin '
+        + 'cuenta, pero lo que marques no se guarda.');
     } catch (err) {
       $('borrar-error').textContent = mensajeDeError(err);
     } finally {
@@ -603,9 +623,10 @@ function initCuentaUI() {
       } else {
         await cambiarContrasenaConLaActual(datos.actual, datos.nueva);
       }
-      $('clave-form').reset();
-      ocultarOjos($('clave-form'));
-      $('clave-ok').textContent = 'Listo, ya podés entrar con la contraseña nueva.';
+      cerrarClave();
+      mostrarExito('Contraseña cambiada',
+        'Ya podés entrar con la nueva. La vas a necesitar la próxima vez que '
+        + 'inicies sesión en otro dispositivo.');
     } catch (err) {
       $('clave-error').textContent = mensajeDeError(err);
     } finally {
@@ -712,6 +733,7 @@ async function boot() {
   initAuthUI();
   initCuentaUI();
   initInvitacion();
+  initExito();
   document.getElementById('planner-btn')
     .addEventListener('click', () => {
       // El planificador arma un plan para varios cuatrimestres: sin cuenta se
@@ -720,8 +742,8 @@ async function boot() {
       openPlanner(carrera);
     });
 
-  const pedida = new URL(location).searchParams.get('c');
-  irA(pedida || carreraDeArranque());
+  limpiarUrlDeCarrera();
+  irA(carreraDeArranque());
 
   document.getElementById('loading-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';

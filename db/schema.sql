@@ -53,7 +53,7 @@ create table if not exists correlativas (
 create table if not exists perfiles (
   id         uuid primary key references neon_auth."user"(id) on delete cascade,
   carrera_id text references carreras(id),
-  tema       text not null default 'dark',
+  tema       text not null default 'white',
   creado_en  timestamptz not null default now()
 );
 
