@@ -211,3 +211,8 @@ header p { font-family:'Space Mono',monospace; font-size:.7rem; letter-spacing:3
 .boot-error { font-family:'Space Mono',monospace; font-size:.7rem; line-height:2; color:var(--text-main); text-align:center; max-width:440px; padding:0 20px; }
 .auth-ver { align-self:flex-start; background:none; border:none; padding:0; cursor:pointer; color:var(--text-sub); font-family:'Space Mono',monospace; font-size:.54rem; letter-spacing:1.5px; text-transform:uppercase; text-decoration:underline; transition:color .15s; }
 .auth-ver:hover { color:var(--accent); }
+.auth-google { background:transparent; border:1px dashed var(--border); color:var(--text-sub); border-radius:9px; padding:9px 14px; cursor:pointer; font-family:'Space Mono',monospace; font-size:.56rem; letter-spacing:1.5px; text-transform:uppercase; transition:all .15s; }
+.auth-google:hover { border-color:var(--accent); color:var(--accent); }
+.auth-ok { font-family:'Space Mono',monospace; font-size:.6rem; line-height:1.7; color:var(--approved-text); }
+.auth-volver { flex:1; display:flex; align-items:center; justify-content:center; background:var(--surface); border:1px solid var(--border); color:var(--text-main); border-radius:9px; padding:10px 14px; text-decoration:none; font-family:'Space Mono',monospace; font-size:.58rem; letter-spacing:1.5px; text-transform:uppercase; transition:all .15s; }
+.auth-volver:hover { border-color:var(--accent); color:var(--accent); }

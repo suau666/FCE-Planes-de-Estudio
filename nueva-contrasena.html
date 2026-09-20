@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nueva contraseña · FCE UBA</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div class="auth-overlay" style="position:static;min-height:100vh">
+  <form class="auth-modal" id="reset-form" novalidate>
+    <h2>Nueva <span>·</span> Contraseña</h2>
+    <p class="auth-sub" id="reset-sub">
+      Elegí una contraseña nueva para tu cuenta.
+    </p>
+
+    <label class="auth-campo">
+      <span>Contraseña nueva</span>
+      <input type="password" id="reset-password" autocomplete="new-password"
+             minlength="8" placeholder="Al menos 8 caracteres">
+    </label>
+    <label class="auth-campo">
+      <span>Repetir contraseña</span>
+      <input type="password" id="reset-password2" autocomplete="new-password"
+             placeholder="La misma de arriba">
+    </label>
+
+    <button type="button" class="auth-ver" id="reset-ver">Ver contraseñas</button>
+
+    <p class="auth-error" id="reset-error" role="alert"></p>
+    <p class="auth-ok" id="reset-ok" role="status"></p>
+
+    <div class="auth-acciones">
+      <button type="submit" class="primary" id="reset-submit">Guardar</button>
+      <a class="auth-volver" href="index.html">← Volver al plan</a>
+    </div>
+  </form>
+</div>
+
+<script type="module" src="js/reset.js"></script>
+</body>
+</html>

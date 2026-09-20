@@ -63,6 +63,8 @@ const POR_CODIGO = {
   EMAIL_NOT_VERIFIED: 'Te falta verificar el mail. Revisá tu casilla.',
   TOO_MANY_REQUESTS: 'Demasiados intentos seguidos. Esperá un minuto.',
   SESSION_EXPIRED: 'Se venció la sesión. Entrá de nuevo.',
+  INVALID_TOKEN: 'Ese link ya no sirve: vale 15 minutos. Pedí uno nuevo.',
+  TOKEN_EXPIRED: 'Ese link ya venció. Pedí uno nuevo.',
   INVALID_ORIGIN: 'Neon Auth no tiene permitido este dominio. Agregalo en los '
     + 'orígenes permitidos de la consola de Neon.',
 };
@@ -88,6 +90,11 @@ export function mensajeDeError(e) {
   // Errores de red: el navegador dice "Failed to fetch" y no aclara nada más.
   if (/failed to fetch|networkerror|load failed/i.test(texto)) {
     return 'No pude conectarme a la base. Fijate si tenés internet.';
+  }
+  // Un token inválido o vencido en el mail de recuperación llega con 401 y
+  // hay que distinguirlo de la sesión vencida: la acción a tomar es otra.
+  if (/invalid or expired|invalid token|token.{0,12}expired/i.test(texto)) {
+    return 'Ese link ya no sirve: los links duran 15 minutos. Pedí uno nuevo.';
   }
   if (e.status === 401 || /jwt|unauthorized|authentication/i.test(texto)) {
     return 'Se venció la sesión. Cerrá y volvé a entrar.';
@@ -138,6 +145,30 @@ export async function signUp({ email, password, nombre }) {
     throw new Error('Cuenta creada. Verificá el mail que te mandamos y después entrá.');
   }
   return adoptar(data.user);
+}
+
+// Google lo maneja Neon Auth: hay que habilitarlo en la consola del proyecto
+// y poner ahí el dominio de la app. Redirige y vuelve con la sesión abierta.
+export async function signInConGoogle() {
+  const client = await getClient();
+  await pedir(() => client.auth.signIn.social({
+    provider: 'google',
+    callbackURL: location.origin + location.pathname,
+  }));
+}
+
+// ── Contraseña olvidada ──────────────────────────────────────────────────────
+// Neon Auth manda el mail con un link a `paginaDeReset`, que llega con el
+// token en la query. El link vale 15 minutos.
+
+export async function pedirResetDeContrasena(email, paginaDeReset) {
+  const client = await getClient();
+  await pedir(() => client.auth.requestPasswordReset({ email, redirectTo: paginaDeReset }));
+}
+
+export async function cambiarContrasena(token, password) {
+  const client = await getClient();
+  await pedir(() => client.auth.resetPassword({ token, newPassword: password }));
 }
 
 export async function signOut() {

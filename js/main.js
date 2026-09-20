@@ -5,8 +5,10 @@ import { renderAll } from './core/render.js';
 import { drawArrows } from './core/arrows.js';
 import { openPlanner, initPlannerUI } from './core/planner.js';
 import {
-  initSesion, signIn, signUp, signOut, getUser, nombreVisible, mensajeDeError,
+  initSesion, signIn, signUp, signInConGoogle, signOut, pedirResetDeContrasena,
+  getUser, nombreVisible, mensajeDeError,
 } from './auth/session.js';
+import { PAGINA_RESET } from './auth/reset-url.js';
 import { hayNeon } from './config.js';
 
 let carrera = null;
@@ -79,10 +81,12 @@ function irA(id) {
 }
 
 // ── Login ────────────────────────────────────────────────────────────────────
-// El modal hace las dos cosas: entrar y crear cuenta. Cambia de modo con el
-// link de abajo; lo único distinto es el campo de nombre y a qué función llama.
+// Un solo modal con tres modos: entrar, crear cuenta y pedir el mail para
+// recuperar la contraseña. Cambia qué campos se ven y a qué función llama.
 
-let modoRegistro = false;
+const ENTRAR = 'entrar', REGISTRO = 'registro', RECUPERAR = 'recuperar';
+let modo = ENTRAR;
+let verClaves = false;
 
 const $ = id => document.getElementById(id);
 
@@ -94,23 +98,64 @@ function pintarSesion() {
     : 'Guardar el progreso en tu cuenta';
 }
 
-function pintarModo() {
-  $('auth-titulo').innerHTML = modoRegistro
-    ? 'Crear cuenta <span>·</span> Mi progreso'
-    : 'Entrar <span>·</span> Mi progreso';
-  $('auth-sub').textContent = modoRegistro
-    ? 'Lo que ya marcaste en este dispositivo se sube a la cuenta nueva.'
-    : 'Con una cuenta, el progreso te sigue a cualquier dispositivo.';
-  for (const el of document.querySelectorAll('.auth-solo-registro')) {
-    el.style.display = modoRegistro ? 'flex' : 'none';
+const TEXTOS = {
+  [ENTRAR]: {
+    titulo: 'Entrar <span>·</span> Mi progreso',
+    sub: 'Con una cuenta, el progreso te sigue a cualquier dispositivo.',
+    submit: 'Entrar',
+    cambiarTexto: '¿Todavía no tenés cuenta?',
+    cambiar: 'Crear una',
+  },
+  [REGISTRO]: {
+    titulo: 'Crear cuenta <span>·</span> Mi progreso',
+    sub: 'Lo que ya marcaste en este dispositivo se sube a la cuenta nueva.',
+    submit: 'Crear cuenta',
+    cambiarTexto: '¿Ya tenés cuenta?',
+    cambiar: 'Entrar',
+  },
+  [RECUPERAR]: {
+    titulo: 'Recuperar <span>·</span> Mi contraseña',
+    sub: 'Poné tu mail y te mandamos un link para elegir una nueva. Dura 15 minutos.',
+    submit: 'Mandarme el link',
+    cambiarTexto: '¿Te acordaste?',
+    cambiar: 'Entrar',
+  },
+};
+
+function mostrar(selector, si) {
+  for (const el of document.querySelectorAll(selector)) {
+    el.style.display = si ? '' : 'none';
   }
-  $('auth-submit').textContent = modoRegistro ? 'Crear cuenta' : 'Entrar';
-  $('auth-cambiar-texto').textContent = modoRegistro
-    ? '¿Ya tenés cuenta?' : '¿Todavía no tenés cuenta?';
-  $('auth-cambiar').textContent = modoRegistro ? 'Entrar' : 'Crear una';
-  $('auth-password').autocomplete = modoRegistro ? 'new-password' : 'current-password';
+}
+
+function pintarModo() {
+  const t = TEXTOS[modo];
+  $('auth-titulo').innerHTML = t.titulo;
+  $('auth-sub').textContent = t.sub;
+  $('auth-submit').textContent = t.submit;
+  $('auth-cambiar-texto').textContent = t.cambiarTexto;
+  $('auth-cambiar').textContent = t.cambiar;
+
+  mostrar('.auth-solo-registro', modo === REGISTRO);
+  mostrar('.auth-solo-clave', modo !== RECUPERAR);
+  $('auth-olvide-fila').style.display = modo === ENTRAR ? '' : 'none';
+  $('auth-password').autocomplete = modo === REGISTRO ? 'new-password' : 'current-password';
+
   $('auth-error').textContent = '';
+  $('auth-ok').textContent = '';
   pintarVer();
+}
+
+// Ver lo que se escribe evita la mitad de los errores de tipeo. El botón
+// cambia las dos cajas a la vez, así se pueden comparar de un vistazo.
+function pintarVer() {
+  const tipo = verClaves ? 'text' : 'password';
+  $('auth-password').type = tipo;
+  $('auth-password2').type = tipo;
+  const plural = modo === REGISTRO;
+  $('auth-ver').textContent = verClaves
+    ? (plural ? 'Ocultar contraseñas' : 'Ocultar contraseña')
+    : (plural ? 'Ver contraseñas' : 'Ver contraseña');
 }
 
 // Revisa el formulario antes de molestar al servidor. Devuelve el mensaje a
@@ -118,29 +163,18 @@ function pintarModo() {
 function revisarDatos({ email, password, password2 }) {
   if (!email) return 'Escribí tu mail.';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Ese mail no parece válido.';
+  if (modo === RECUPERAR) return null;
   if (!password) return 'Escribí tu contraseña.';
   if (password.length < 8) return 'La contraseña necesita al menos 8 caracteres.';
-  if (modoRegistro) {
+  if (modo === REGISTRO) {
     if (!password2) return 'Repetí la contraseña para confirmarla.';
     if (password !== password2) return 'Las dos contraseñas no son iguales.';
   }
   return null;
 }
 
-// Ver lo que se escribe evita la mitad de los errores de tipeo. El botón
-// cambia las dos cajas a la vez, así se pueden comparar de un vistazo.
-let verClaves = false;
-
-function pintarVer() {
-  const tipo = verClaves ? 'text' : 'password';
-  $('auth-password').type = tipo;
-  $('auth-password2').type = tipo;
-  $('auth-ver').textContent = verClaves
-    ? (modoRegistro ? 'Ocultar contraseñas' : 'Ocultar contraseña')
-    : (modoRegistro ? 'Ver contraseñas' : 'Ver contraseña');
-}
-
-function abrirModal() {
+function abrirModal(enModo = ENTRAR) {
+  modo = enModo;
   verClaves = false;
   pintarModo();
   $('auth-overlay').style.display = 'flex';
@@ -151,6 +185,7 @@ function cerrarModal() {
   $('auth-overlay').style.display = 'none';
   $('auth-form').reset();
   $('auth-error').textContent = '';
+  $('auth-ok').textContent = '';
 }
 
 // Después de entrar o salir, el progreso es otro: hay que traerlo y redibujar.
@@ -189,8 +224,21 @@ function initAuthUI() {
   });
 
   $('auth-cambiar').addEventListener('click', () => {
-    modoRegistro = !modoRegistro;
+    modo = modo === ENTRAR ? REGISTRO : ENTRAR;
     pintarModo();
+  });
+  $('auth-olvide').addEventListener('click', () => {
+    modo = RECUPERAR;
+    pintarModo();
+  });
+
+  $('auth-google').addEventListener('click', async () => {
+    $('auth-error').textContent = '';
+    try {
+      await signInConGoogle();
+    } catch (err) {
+      $('auth-error').textContent = mensajeDeError(err);
+    }
   });
 
   $('auth-form').addEventListener('submit', async e => {
@@ -207,10 +255,18 @@ function initAuthUI() {
 
     $('auth-submit').disabled = true;
     $('auth-error').textContent = '';
+    $('auth-ok').textContent = '';
     try {
-      await (modoRegistro ? signUp(datos) : signIn(datos));
-      cerrarModal();
-      await recargarProgreso();
+      if (modo === RECUPERAR) {
+        await pedirResetDeContrasena(datos.email, PAGINA_RESET);
+        // A propósito no decimos si el mail existe o no.
+        $('auth-ok').textContent =
+          'Si hay una cuenta con ese mail, ya te mandamos el link. Revisá tu casilla.';
+      } else {
+        await (modo === REGISTRO ? signUp(datos) : signIn(datos));
+        cerrarModal();
+        await recargarProgreso();
+      }
     } catch (err) {
       $('auth-error').textContent = mensajeDeError(err);
     } finally {

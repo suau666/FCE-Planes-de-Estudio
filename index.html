@@ -129,9 +129,9 @@
       <span>Mail</span>
       <input type="email" id="auth-email" autocomplete="email" required placeholder="vos@ejemplo.com">
     </label>
-    <label class="auth-campo">
+    <label class="auth-campo auth-solo-clave" id="auth-password-campo">
       <span>Contraseña</span>
-      <input type="password" id="auth-password" autocomplete="current-password" required
+      <input type="password" id="auth-password" autocomplete="current-password"
              minlength="8" placeholder="Al menos 8 caracteres">
     </label>
     <label class="auth-campo auth-solo-registro" id="auth-password2-campo">
@@ -140,18 +140,26 @@
              placeholder="La misma de arriba">
     </label>
 
-    <button type="button" class="auth-ver" id="auth-ver">Ver contraseña</button>
+    <button type="button" class="auth-ver auth-solo-clave" id="auth-ver">Ver contraseña</button>
 
     <p class="auth-error" id="auth-error" role="alert"></p>
+    <p class="auth-ok" id="auth-ok" role="status"></p>
 
     <div class="auth-acciones">
       <button type="submit" class="primary" id="auth-submit">Entrar</button>
       <button type="button" id="auth-cerrar">✕ Cerrar</button>
     </div>
 
+    <button type="button" class="auth-google auth-solo-clave" id="auth-google">
+      Entrar con Google
+    </button>
+
     <p class="auth-cambiar">
       <span id="auth-cambiar-texto">¿Todavía no tenés cuenta?</span>
       <button type="button" id="auth-cambiar">Crear una</button>
+    </p>
+    <p class="auth-cambiar" id="auth-olvide-fila">
+      <button type="button" id="auth-olvide">Me olvidé la contraseña</button>
     </p>
   </form>
 </div>
