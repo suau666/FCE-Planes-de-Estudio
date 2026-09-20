@@ -180,7 +180,7 @@
       <span>Nombre</span>
       <input type="text" id="auth-nombre" autocomplete="name" placeholder="Cómo te llamás">
     </label>
-    <label class="auth-campo">
+    <label class="auth-campo" id="auth-email-campo">
       <span>Mail</span>
       <input type="email" id="auth-email" autocomplete="email" required placeholder="vos@ejemplo.com">
     </label>
@@ -201,6 +201,12 @@
       </div>
     </label>
 
+    <label class="auth-campo auth-solo-codigo" id="auth-codigo-campo">
+      <span>Código del mail</span>
+      <input type="text" id="auth-codigo" inputmode="numeric" autocomplete="one-time-code"
+             maxlength="6" placeholder="Los 6 dígitos">
+    </label>
+
     <p class="auth-error" id="auth-error" role="alert"></p>
     <p class="auth-ok" id="auth-ok" role="status"></p>
 
@@ -216,6 +222,10 @@
     <p class="auth-cambiar">
       <span id="auth-cambiar-texto">¿Todavía no tenés cuenta?</span>
       <button type="button" id="auth-cambiar">Crear una</button>
+    </p>
+    <p class="auth-cambiar auth-solo-codigo" id="auth-reenviar-fila">
+      <span>¿No te llegó?</span>
+      <button type="button" id="auth-reenviar">Mandalo de nuevo</button>
     </p>
     <p class="auth-cambiar" id="auth-olvide-fila">
       <button type="button" id="auth-olvide">Me olvidé la contraseña</button>

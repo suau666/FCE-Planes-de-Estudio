@@ -6,7 +6,7 @@ import { drawArrows } from './core/arrows.js';
 import { openPlanner, initPlannerUI } from './core/planner.js';
 import {
   initSesion, signIn, signUp, signInConGoogle, signOut, pedirResetDeContrasena,
-  cambiarContrasenaConLaActual, vincularGoogle,
+  cambiarContrasenaConLaActual, vincularGoogle, mandarCodigo, verificarCodigo,
   errorDeRedireccion, getUser, nombreVisible, mensajeDeError,
 } from './auth/session.js';
 import { PAGINA_RESET } from './auth/reset-url.js';
@@ -86,8 +86,10 @@ function irA(id) {
 // Un solo modal con tres modos: entrar, crear cuenta y pedir el mail para
 // recuperar la contraseña. Cambia qué campos se ven y a qué función llama.
 
-const ENTRAR = 'entrar', REGISTRO = 'registro', RECUPERAR = 'recuperar';
+const ENTRAR = 'entrar', REGISTRO = 'registro';
+const RECUPERAR = 'recuperar', VERIFICAR = 'verificar';
 let modo = ENTRAR;
+let mailAVerificar = '';
 
 const $ = id => document.getElementById(id);
 
@@ -122,6 +124,13 @@ const TEXTOS = {
     cambiarTexto: '¿Te acordaste?',
     cambiar: 'Entrar',
   },
+  [VERIFICAR]: {
+    titulo: 'Verificar <span>·</span> Tu mail',
+    sub: '',   // lo arma pintarModo con el mail al que fue el código
+    submit: 'Verificar',
+    cambiarTexto: '¿Otro mail?',
+    cambiar: 'Volver',
+  },
 };
 
 function mostrar(selector, si) {
@@ -138,8 +147,16 @@ function pintarModo() {
   $('auth-cambiar-texto').textContent = t.cambiarTexto;
   $('auth-cambiar').textContent = t.cambiar;
 
+  if (modo === VERIFICAR) {
+    $('auth-sub').textContent =
+      `Te mandamos un código de 6 dígitos a ${mailAVerificar}. Ponelo acá para `
+      + 'terminar de crear la cuenta.';
+  }
+
   mostrar('.auth-solo-registro', modo === REGISTRO);
-  mostrar('.auth-solo-clave', modo !== RECUPERAR);
+  mostrar('.auth-solo-clave', modo === ENTRAR || modo === REGISTRO);
+  mostrar('.auth-solo-codigo', modo === VERIFICAR);
+  $('auth-email-campo').style.display = modo === VERIFICAR ? 'none' : '';
   $('auth-olvide-fila').style.display = modo === ENTRAR ? '' : 'none';
   $('auth-password').autocomplete = modo === REGISTRO ? 'new-password' : 'current-password';
 
@@ -149,7 +166,12 @@ function pintarModo() {
 
 // Revisa el formulario antes de molestar al servidor. Devuelve el mensaje a
 // mostrar, o null si está todo bien.
-function revisarDatos({ email, password, password2 }) {
+function revisarDatos({ email, password, password2, codigo }) {
+  if (modo === VERIFICAR) {
+    if (!codigo) return 'Escribí el código que te llegó por mail.';
+    if (!/^\d{6}$/.test(codigo)) return 'El código son 6 dígitos.';
+    return null;
+  }
   if (!email) return 'Escribí tu mail.';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Ese mail no parece válido.';
   if (modo === RECUPERAR) return null;
@@ -218,6 +240,17 @@ function initAuthUI() {
     modo = modo === ENTRAR ? REGISTRO : ENTRAR;
     pintarModo();
   });
+
+  $('auth-reenviar').addEventListener('click', async () => {
+    $('auth-error').textContent = '';
+    $('auth-ok').textContent = '';
+    try {
+      await mandarCodigo(mailAVerificar);
+      $('auth-ok').textContent = `Te mandamos otro código a ${mailAVerificar}.`;
+    } catch (err) {
+      $('auth-error').textContent = mensajeDeError(err);
+    }
+  });
   $('auth-olvide').addEventListener('click', () => {
     modo = RECUPERAR;
     pintarModo();
@@ -239,6 +272,7 @@ function initAuthUI() {
       password: $('auth-password').value,
       password2: $('auth-password2').value,
       nombre: $('auth-nombre').value.trim(),
+      codigo: $('auth-codigo').value.trim(),
     };
 
     const problema = revisarDatos(datos);
@@ -253,10 +287,22 @@ function initAuthUI() {
         // A propósito no decimos si el mail existe o no.
         $('auth-ok').textContent =
           'Si hay una cuenta con ese mail, ya te mandamos el link. Revisá tu casilla.';
-      } else {
-        await (modo === REGISTRO ? signUp(datos) : signIn(datos));
+      } else if (modo === VERIFICAR) {
+        await verificarCodigo(mailAVerificar, datos.codigo);
         cerrarModal();
         await recargarProgreso();
+      } else {
+        const r = await (modo === REGISTRO ? signUp(datos) : signIn(datos));
+        // Neon quedó esperando el código del mail: no hay sesión todavía.
+        if (r?.verificar) {
+          mailAVerificar = r.email;
+          modo = VERIFICAR;
+          pintarModo();
+          $('auth-codigo').focus();
+        } else {
+          cerrarModal();
+          await recargarProgreso();
+        }
       }
     } catch (err) {
       $('auth-error').textContent = mensajeDeError(err);

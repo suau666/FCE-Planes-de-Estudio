@@ -95,6 +95,9 @@ const POR_CODIGO = {
   EMAIL_NOT_VERIFIED: 'Te falta verificar el mail. Revisá tu casilla.',
   TOO_MANY_REQUESTS: 'Demasiados intentos seguidos. Esperá un minuto.',
   SESSION_EXPIRED: 'Se venció la sesión. Entrá de nuevo.',
+  INVALID_OTP: 'Ese código no es correcto. Mirá el mail de nuevo.',
+  OTP_EXPIRED: 'El código ya venció. Pedí uno nuevo.',
+  TOO_MANY_ATTEMPTS: 'Muchos intentos seguidos. Pedí un código nuevo.',
   INVALID_TOKEN: 'Ese link ya no sirve: vale 15 minutos. Pedí uno nuevo.',
   TOKEN_EXPIRED: 'Ese link ya venció. Pedí uno nuevo.',
   INVALID_ORIGIN: 'Neon Auth no tiene permitido este dominio. Agregalo en los '
@@ -109,6 +112,13 @@ const POR_TEXTO = {
   'Invalid email': 'Ese mail no parece válido.',
   'Invalid origin': 'Neon Auth no tiene permitido este dominio. Agregalo en los '
     + 'orígenes permitidos de la consola de Neon.',
+  // El SDK aplasta el código de estos a "validation_failed", así que la única
+  // pista que queda es el texto.
+  'Invalid OTP': 'Ese código no es correcto. Mirá el mail de nuevo.',
+  'OTP expired': 'El código ya venció. Pedí uno nuevo.',
+  'OTP Expired': 'El código ya venció. Pedí uno nuevo.',
+  'Too many attempts': 'Muchos intentos seguidos. Pedí un código nuevo.',
+  'Email not verified': 'Te falta verificar el mail. Revisá tu casilla.',
 };
 
 // Traduce cualquier cosa que haya salido mal a una frase que se pueda mostrar.
@@ -135,6 +145,9 @@ export function mensajeDeError(e) {
     return `Neon Auth no tiene permitido ${location.origin}. Agregalo en los `
       + 'orígenes permitidos de la consola de Neon.';
   }
+  if (/\botp\b/i.test(texto)) {
+    return 'Ese código no anduvo. Revisá el mail o pedí uno nuevo.';
+  }
   if (/permission denied/i.test(texto)) {
     return 'La base no me dejó hacer eso. Revisá los permisos del esquema.';
   }
@@ -159,11 +172,31 @@ async function pedir(fn) {
   return res?.data;
 }
 
+// `signIn` y `signUp` devuelven { user } cuando la sesión quedó abierta, o
+// { verificar: true, email } cuando Neon está esperando el código del mail.
+// Con "Verify at Sign-up" prendido, crear la cuenta no alcanza para entrar.
+
+const pideCodigo = user => user && (user.emailVerified ?? user.email_verified) === false;
+
 export async function signIn({ email, password }) {
   const client = await getClient();
-  const data = await pedir(() => client.auth.signIn.email({ email, password }));
+  let data;
+  try {
+    data = await pedir(() => client.auth.signIn.email({ email, password }));
+  } catch (e) {
+    // Cuenta sin verificar: en vez de un error seco, se pide el código.
+    if (e.causa?.code === 'EMAIL_NOT_VERIFIED') {
+      await mandarCodigo(email);
+      return { verificar: true, email };
+    }
+    throw e;
+  }
+  if (pideCodigo(data?.user)) {
+    await mandarCodigo(email);
+    return { verificar: true, email };
+  }
   if (!data?.user) throw new Error('El servidor no devolvió la sesión. Probá de nuevo.');
-  return adoptar(data.user);
+  return { user: adoptar(data.user) };
 }
 
 export async function signUp({ email, password, nombre }) {
@@ -171,12 +204,29 @@ export async function signUp({ email, password, nombre }) {
   const data = await pedir(() => client.auth.signUp.email({
     email, password, name: nombre || email.split('@')[0],
   }));
-  // Si Neon Auth pide verificar el mail, la cuenta queda creada pero sin
-  // sesión. Se avisa con un error claro en vez de dejar la pantalla igual.
-  if (!data?.user) {
-    throw new Error('Cuenta creada. Verificá el mail que te mandamos y después entrá.');
-  }
-  return adoptar(data.user);
+  // Sin verificar todavía: la cuenta existe pero no se entra hasta poner el
+  // código. Antes se la daba por buena acá y la app dejaba entrar de una.
+  if (!data?.user || pideCodigo(data.user)) return { verificar: true, email };
+  return { user: adoptar(data.user) };
+}
+
+// ── Código de verificación por mail ─────────────────────────────────────────
+
+export async function mandarCodigo(email) {
+  const client = await getClient();
+  await pedir(() => client.auth.emailOtp.sendVerificationOtp({
+    email, type: 'email-verification',
+  }));
+}
+
+export async function verificarCodigo(email, codigo) {
+  const client = await getClient();
+  const data = await pedir(() => client.auth.emailOtp.verifyEmail({ email, otp: codigo }));
+  if (data?.user) return adoptar(data.user);
+
+  // Si Neon no devuelve la sesión con el código, queda abierta igual.
+  const { data: sesion } = await client.auth.getSession();
+  return adoptar(sesion?.user ?? null);
 }
 
 // Google lo maneja Neon Auth: hay que habilitarlo en la consola del proyecto
