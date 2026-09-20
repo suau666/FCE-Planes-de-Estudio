@@ -203,6 +203,31 @@ export async function cambiarContrasena(token, password) {
   await pedir(() => client.auth.resetPassword({ token, newPassword: password }));
 }
 
+// ── Cuenta: contraseña y proveedores ─────────────────────────────────────────
+// `set-password` (poner una contraseña sin saber la anterior) no existe para
+// el navegador: Better Auth sólo lo deja hacer desde un servidor, y la app no
+// tiene uno. Probado contra Neon: /set-password da 404 y /change-password da
+// 401. Por eso, quien entró con Google y quiere una contraseña la pone por el
+// mismo camino que el "me olvidé": un mail con un link.
+
+export async function cambiarContrasenaConLaActual(actual, nueva) {
+  const client = await getClient();
+  await pedir(() => client.auth.changePassword({
+    currentPassword: actual,
+    newPassword: nueva,
+    revokeOtherSessions: false,
+  }));
+}
+
+// Le agrega Google a la cuenta que ya está abierta. Redirige a Google y vuelve.
+export async function vincularGoogle() {
+  const client = await getClient();
+  await pedir(() => client.auth.linkSocial({
+    provider: 'google',
+    callbackURL: location.origin + location.pathname,
+  }));
+}
+
 export async function signOut() {
   if (hayNeon) {
     try {

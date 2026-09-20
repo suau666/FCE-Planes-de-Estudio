@@ -6,6 +6,7 @@ import { drawArrows } from './core/arrows.js';
 import { openPlanner, initPlannerUI } from './core/planner.js';
 import {
   initSesion, signIn, signUp, signInConGoogle, signOut, pedirResetDeContrasena,
+  cambiarContrasenaConLaActual, vincularGoogle,
   errorDeRedireccion, getUser, nombreVisible, mensajeDeError,
 } from './auth/session.js';
 import { PAGINA_RESET } from './auth/reset-url.js';
@@ -92,6 +93,7 @@ const $ = id => document.getElementById(id);
 
 function pintarSesion() {
   $('usuario').textContent = nombreVisible();
+  $('cuenta-btn').style.display = getUser() ? '' : 'none';
   $('auth-btn').textContent = getUser() ? 'Salir' : 'Entrar';
   $('auth-btn').title = getUser()
     ? `Cerrar la sesión de ${nombreVisible()}`
@@ -264,6 +266,96 @@ function initAuthUI() {
   });
 }
 
+// ── Mi cuenta ────────────────────────────────────────────────────────────────
+// Cambiar la contraseña sabiendo la actual, o pedir un mail para crear una
+// cuando se entró con Google y nunca hubo contraseña. Poner una contraseña sin
+// saber la anterior no se puede desde el navegador: Better Auth sólo expone
+// `set-password` del lado del servidor, y esta app no tiene servidor propio.
+
+function abrirCuenta() {
+  const user = getUser();
+  if (!user) return;
+  $('cuenta-mail').textContent = user.email || '';
+  $('cuenta-form').reset();
+  ocultarOjos($('cuenta-form'));
+  $('cuenta-error').textContent = '';
+  $('cuenta-ok').textContent = '';
+  $('cuenta-overlay').style.display = 'flex';
+  $('cuenta-actual').focus();
+}
+
+function cerrarCuenta() {
+  $('cuenta-overlay').style.display = 'none';
+  $('cuenta-form').reset();
+}
+
+function revisarCambio(actual, nueva, nueva2) {
+  if (!actual) return 'Escribí tu contraseña actual. Si no tenés, usá el botón de abajo.';
+  if (!nueva) return 'Escribí la contraseña nueva.';
+  if (nueva.length < 8) return 'La contraseña nueva necesita al menos 8 caracteres.';
+  if (nueva !== nueva2) return 'Las dos contraseñas nuevas no son iguales.';
+  if (nueva === actual) return 'La contraseña nueva es igual a la de ahora.';
+  return null;
+}
+
+function initCuentaUI() {
+  initOjos($('cuenta-form'));
+
+  $('cuenta-btn').addEventListener('click', abrirCuenta);
+  $('cuenta-cerrar').addEventListener('click', cerrarCuenta);
+  $('cuenta-overlay').addEventListener('click', e => {
+    if (e.target === $('cuenta-overlay')) cerrarCuenta();
+  });
+
+  $('cuenta-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const actual = $('cuenta-actual').value;
+    const nueva = $('cuenta-nueva').value;
+    const nueva2 = $('cuenta-nueva2').value;
+
+    const problema = revisarCambio(actual, nueva, nueva2);
+    if (problema) { $('cuenta-error').textContent = problema; return; }
+
+    $('cuenta-guardar').disabled = true;
+    $('cuenta-error').textContent = '';
+    $('cuenta-ok').textContent = '';
+    try {
+      await cambiarContrasenaConLaActual(actual, nueva);
+      $('cuenta-form').reset();
+      ocultarOjos($('cuenta-form'));
+      $('cuenta-ok').textContent = 'Listo, ya tenés contraseña nueva.';
+    } catch (err) {
+      $('cuenta-error').textContent = mensajeDeError(err);
+    } finally {
+      $('cuenta-guardar').disabled = false;
+    }
+  });
+
+  // Sin contraseña previa: el mail de "me olvidé" sirve igual para crearla.
+  $('cuenta-mail-clave').addEventListener('click', async () => {
+    const user = getUser();
+    if (!user?.email) return;
+    $('cuenta-error').textContent = '';
+    $('cuenta-ok').textContent = '';
+    try {
+      await pedirResetDeContrasena(user.email, PAGINA_RESET);
+      $('cuenta-ok').textContent =
+        `Te mandamos un mail a ${user.email} con el link para elegir la contraseña.`;
+    } catch (err) {
+      $('cuenta-error').textContent = mensajeDeError(err);
+    }
+  });
+
+  $('cuenta-vincular').addEventListener('click', async () => {
+    $('cuenta-error').textContent = '';
+    try {
+      await vincularGoogle();
+    } catch (err) {
+      $('cuenta-error').textContent = mensajeDeError(err);
+    }
+  });
+}
+
 // ── Boot ─────────────────────────────────────────────────────────────────────
 async function boot() {
   initTemas();
@@ -275,6 +367,7 @@ async function boot() {
 
   aplicarTema(store.tema);
   initAuthUI();
+  initCuentaUI();
   document.getElementById('planner-btn')
     .addEventListener('click', () => openPlanner(carrera));
 

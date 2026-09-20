@@ -19,6 +19,7 @@
 
 <div class="topbar">
   <span class="usuario" id="usuario"></span>
+  <button class="auth-btn" id="cuenta-btn" style="display:none">Mi cuenta</button>
   <button class="auth-btn" id="auth-btn">Entrar</button>
   <div class="theme-switcher" id="theme-switcher"></div>
 </div>
@@ -113,6 +114,60 @@
   </div>
 </div>
 <div class="planner-toast" id="planner-toast"></div>
+
+<div id="cuenta-overlay" class="auth-overlay" style="display:none">
+  <form class="auth-modal" id="cuenta-form" novalidate>
+    <h2>Mi cuenta <span>·</span> <span id="cuenta-mail"></span></h2>
+    <p class="auth-sub">
+      Tu contraseña y cómo entrás. El progreso se guarda solo, no hace falta
+      tocar nada acá.
+    </p>
+
+    <p class="auth-seccion">Cambiar la contraseña</p>
+    <label class="auth-campo">
+      <span>Contraseña actual</span>
+      <div class="auth-input-ojo">
+        <input type="password" id="cuenta-actual" autocomplete="current-password"
+               placeholder="La que usás hoy">
+        <button type="button" class="auth-ojo"></button>
+      </div>
+    </label>
+    <label class="auth-campo">
+      <span>Contraseña nueva</span>
+      <div class="auth-input-ojo">
+        <input type="password" id="cuenta-nueva" autocomplete="new-password"
+               minlength="8" placeholder="Al menos 8 caracteres">
+        <button type="button" class="auth-ojo"></button>
+      </div>
+    </label>
+    <label class="auth-campo">
+      <span>Repetir la nueva</span>
+      <div class="auth-input-ojo">
+        <input type="password" id="cuenta-nueva2" autocomplete="new-password"
+               placeholder="La misma de arriba">
+        <button type="button" class="auth-ojo"></button>
+      </div>
+    </label>
+
+    <p class="auth-error" id="cuenta-error" role="alert"></p>
+    <p class="auth-ok" id="cuenta-ok" role="status"></p>
+
+    <div class="auth-acciones">
+      <button type="submit" class="primary" id="cuenta-guardar">Guardar</button>
+      <button type="button" id="cuenta-cerrar">✕ Cerrar</button>
+    </div>
+
+    <p class="auth-seccion">¿Entraste con Google y no tenés contraseña?</p>
+    <button type="button" class="auth-google" id="cuenta-mail-clave">
+      Mandarme un mail para crear una
+    </button>
+
+    <p class="auth-seccion">Entrar también con Google</p>
+    <button type="button" class="auth-google" id="cuenta-vincular">
+      Vincular mi cuenta de Google
+    </button>
+  </form>
+</div>
 
 <div id="auth-overlay" class="auth-overlay" style="display:none">
   <form class="auth-modal" id="auth-form" novalidate>

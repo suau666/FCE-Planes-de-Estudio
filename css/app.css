@@ -219,3 +219,5 @@ header p { font-family:'Space Mono',monospace; font-size:.7rem; letter-spacing:3
 .auth-ojo { position:absolute; right:6px; top:50%; transform:translateY(-50%); display:flex; align-items:center; justify-content:center; width:28px; height:28px; padding:0; background:none; border:none; border-radius:7px; cursor:pointer; color:var(--text-sub); transition:color .15s,background .15s; }
 .auth-ojo:hover { color:var(--accent); background:var(--bg); }
 .auth-ojo:disabled { opacity:.4; cursor:default; }
+.auth-seccion { font-family:'Space Mono',monospace; font-size:.54rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-sub); border-top:1px solid var(--border); padding-top:14px; margin-top:4px; }
+.auth-modal h2 #cuenta-mail { color:var(--text-sub); font-size:.7rem; text-transform:none; letter-spacing:0; }
