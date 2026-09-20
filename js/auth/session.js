@@ -50,6 +50,38 @@ export async function initSesion() {
   }
 }
 
+// ── Vuelta de Google ─────────────────────────────────────────────────────────
+// Cuando el login social falla, Neon Auth no tira una excepción: redirige a la
+// app con ?error=... en la URL. Si no se mira, la pantalla queda igual que
+// siempre (como invitado) y el error se queda pegado en la barra de dirección.
+
+const ERROR_REDIRECCION = {
+  account_not_linked:
+    'Ese mail ya tiene una cuenta con contraseña. Entrá con mail y contraseña, '
+    + 'o permití vincular cuentas en la consola de Neon Auth.',
+  access_denied: 'No le diste permiso a la app desde Google.',
+  signup_disabled: 'Neon Auth no tiene habilitado crear cuentas con Google.',
+  invalid_state: 'El link de vuelta de Google venció. Probá de nuevo.',
+  state_not_found: 'El link de vuelta de Google venció. Probá de nuevo.',
+  please_restart_the_process: 'Se cortó el login con Google. Probá de nuevo.',
+};
+
+// Devuelve el mensaje si la URL trae un error, y lo saca de la URL para que no
+// quede dando vueltas ni se comparta por accidente.
+export function errorDeRedireccion() {
+  const url = new URL(location);
+  const codigo = url.searchParams.get('error');
+  if (!codigo) return null;
+
+  const detalle = url.searchParams.get('error_description');
+  url.searchParams.delete('error');
+  url.searchParams.delete('error_description');
+  url.searchParams.delete('error_uri');
+  history.replaceState(null, '', url);
+
+  return ERROR_REDIRECCION[codigo] || detalle || `Google no pudo entrar (${codigo}).`;
+}
+
 // Better Auth contesta { message, code, status } y el mensaje viene en inglés.
 // Traducimos por código (estable) y, si no lo conocemos, por texto.
 const POR_CODIGO = {

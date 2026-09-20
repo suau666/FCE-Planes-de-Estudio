@@ -6,9 +6,10 @@ import { drawArrows } from './core/arrows.js';
 import { openPlanner, initPlannerUI } from './core/planner.js';
 import {
   initSesion, signIn, signUp, signInConGoogle, signOut, pedirResetDeContrasena,
-  getUser, nombreVisible, mensajeDeError,
+  errorDeRedireccion, getUser, nombreVisible, mensajeDeError,
 } from './auth/session.js';
 import { PAGINA_RESET } from './auth/reset-url.js';
+import { initOjos, ocultarOjos } from './auth/ojo.js';
 import { hayNeon } from './config.js';
 
 let carrera = null;
@@ -86,7 +87,6 @@ function irA(id) {
 
 const ENTRAR = 'entrar', REGISTRO = 'registro', RECUPERAR = 'recuperar';
 let modo = ENTRAR;
-let verClaves = false;
 
 const $ = id => document.getElementById(id);
 
@@ -143,19 +143,6 @@ function pintarModo() {
 
   $('auth-error').textContent = '';
   $('auth-ok').textContent = '';
-  pintarVer();
-}
-
-// Ver lo que se escribe evita la mitad de los errores de tipeo. El botón
-// cambia las dos cajas a la vez, así se pueden comparar de un vistazo.
-function pintarVer() {
-  const tipo = verClaves ? 'text' : 'password';
-  $('auth-password').type = tipo;
-  $('auth-password2').type = tipo;
-  const plural = modo === REGISTRO;
-  $('auth-ver').textContent = verClaves
-    ? (plural ? 'Ocultar contraseñas' : 'Ocultar contraseña')
-    : (plural ? 'Ver contraseñas' : 'Ver contraseña');
 }
 
 // Revisa el formulario antes de molestar al servidor. Devuelve el mensaje a
@@ -175,7 +162,7 @@ function revisarDatos({ email, password, password2 }) {
 
 function abrirModal(enModo = ENTRAR) {
   modo = enModo;
-  verClaves = false;
+  ocultarOjos($('auth-form'));
   pintarModo();
   $('auth-overlay').style.display = 'flex';
   $('auth-email').focus();
@@ -198,8 +185,15 @@ async function recargarProgreso() {
   else if (subido) indicador('✓ Tu progreso quedó en la cuenta', 'saved', 4000);
 }
 
+// Vuelve de Google sin sesión: se abre el modal con el motivo a la vista.
+function mostrarFalloDeGoogle(motivo) {
+  abrirModal(ENTRAR);
+  $('auth-error').textContent = motivo;
+}
+
 function initAuthUI() {
   pintarSesion();
+  initOjos($('auth-form'));
 
   // Sin Neon configurado no hay cuentas: el progreso vive en el dispositivo.
   if (!hayNeon) { $('auth-btn').style.display = 'none'; return; }
@@ -218,11 +212,6 @@ function initAuthUI() {
   $('auth-overlay').addEventListener('click', e => {
     if (e.target === $('auth-overlay')) cerrarModal();
   });
-  $('auth-ver').addEventListener('click', () => {
-    verClaves = !verClaves;
-    pintarVer();
-  });
-
   $('auth-cambiar').addEventListener('click', () => {
     modo = modo === ENTRAR ? REGISTRO : ENTRAR;
     pintarModo();
@@ -295,7 +284,14 @@ async function boot() {
   document.getElementById('loading-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
 
-  if (error) indicador(`✗ ${error}`, 'error', 7000);
+  // Si Google no pudo entrar, volvió con ?error= en la URL y hay que decirlo:
+  // si no, la pantalla se ve igual que siempre y parece que no pasó nada. Va
+  // en el modal, no en el cartelito de abajo: el cartelito lo pisa el próximo
+  // "Guardado" y encima acá hay algo para leer y decidir.
+  const falloGoogle = errorDeRedireccion();
+
+  if (falloGoogle) mostrarFalloDeGoogle(falloGoogle);
+  else if (error) indicador(`✗ ${error}`, 'error', 7000);
   else if (subido) indicador('✓ Tu progreso quedó en la cuenta', 'saved', 4000);
   else if (migrado) indicador('✓ Progreso importado de las apps viejas', 'saved', 4000);
 }

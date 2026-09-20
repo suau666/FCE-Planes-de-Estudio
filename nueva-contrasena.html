@@ -20,16 +20,20 @@
 
     <label class="auth-campo">
       <span>Contraseña nueva</span>
-      <input type="password" id="reset-password" autocomplete="new-password"
-             minlength="8" placeholder="Al menos 8 caracteres">
+      <div class="auth-input-ojo">
+        <input type="password" id="reset-password" autocomplete="new-password"
+               minlength="8" placeholder="Al menos 8 caracteres">
+        <button type="button" class="auth-ojo"></button>
+      </div>
     </label>
     <label class="auth-campo">
       <span>Repetir contraseña</span>
-      <input type="password" id="reset-password2" autocomplete="new-password"
-             placeholder="La misma de arriba">
+      <div class="auth-input-ojo">
+        <input type="password" id="reset-password2" autocomplete="new-password"
+               placeholder="La misma de arriba">
+        <button type="button" class="auth-ojo"></button>
+      </div>
     </label>
-
-    <button type="button" class="auth-ver" id="reset-ver">Ver contraseñas</button>
 
     <p class="auth-error" id="reset-error" role="alert"></p>
     <p class="auth-ok" id="reset-ok" role="status"></p>

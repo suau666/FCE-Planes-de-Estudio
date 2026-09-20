@@ -3,19 +3,11 @@
 // minutos. Si no hay token, no hay nada que hacer acá.
 
 import { cambiarContrasena, mensajeDeError } from './auth/session.js';
+import { initOjos } from './auth/ojo.js';
 
 const $ = id => document.getElementById(id);
 const params = new URL(location).searchParams;
 const token = params.get('token');
-
-let verClaves = false;
-
-function pintarVer() {
-  const tipo = verClaves ? 'text' : 'password';
-  $('reset-password').type = tipo;
-  $('reset-password2').type = tipo;
-  $('reset-ver').textContent = verClaves ? 'Ocultar contraseñas' : 'Ver contraseñas';
-}
 
 function revisar(password, password2) {
   if (!password) return 'Escribí la contraseña nueva.';
@@ -33,18 +25,13 @@ function sinToken() {
     : 'Este link no trae el código que manda el mail.';
   $('reset-error').textContent =
     'Volvé al plan, tocá "Entrar" y después "Me olvidé la contraseña" para pedir uno nuevo.';
-  $('reset-form').querySelectorAll('input, #reset-submit, #reset-ver')
+  $('reset-form').querySelectorAll('input, button')
     .forEach(el => { el.disabled = true; });
 }
 
 function init() {
-  pintarVer();
+  initOjos($('reset-form'));
   if (!token) return sinToken();
-
-  $('reset-ver').addEventListener('click', () => {
-    verClaves = !verClaves;
-    pintarVer();
-  });
 
   $('reset-form').addEventListener('submit', async e => {
     e.preventDefault();
