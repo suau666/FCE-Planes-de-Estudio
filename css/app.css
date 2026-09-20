@@ -243,3 +243,9 @@ header p { font-family:'Space Mono',monospace; font-size:.7rem; letter-spacing:3
 body.sin-scroll { overflow:hidden; }
 .tramo-marcar { margin-top:8px; background:var(--surface); border:1px solid var(--border); color:var(--text-sub); border-radius:8px; padding:5px 9px; cursor:pointer; font-family:'Syne',sans-serif; font-weight:600; font-size:.68rem; letter-spacing:0; text-transform:none; transition:all .15s; }
 .tramo-marcar:hover { border-color:var(--accent); color:var(--accent); }
+.auth-cabecera { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.auth-x { display:flex; align-items:center; justify-content:center; width:30px; height:30px; margin:-3px -4px 0 0; padding:0; background:none; border:none; border-radius:8px; cursor:pointer; color:var(--text-sub); transition:color .15s,background .15s; }
+.auth-x:hover { color:var(--accent); background:var(--surface); }
+.auth-fila { display:flex; gap:9px; }
+.auth-fila .auth-campo { flex:1; min-width:0; }
+.auth-sub:empty { display:none; }

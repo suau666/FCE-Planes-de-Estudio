@@ -22,7 +22,7 @@
 <div class="topbar">
   <div class="topbar-izq">
     <button class="auth-btn" id="cuenta-btn" style="display:none">Mi cuenta</button>
-    <button class="auth-btn" id="auth-btn">Entrar</button>
+    <button class="auth-btn" id="auth-btn">Iniciar sesión</button>
   </div>
   <div class="theme-switcher" id="theme-switcher"></div>
 </div>
@@ -132,7 +132,7 @@
 
     <p class="auth-cambiar">
       <span>¿Ya tenés cuenta?</span>
-      <button type="button" id="invitar-entrar">Entrar</button>
+      <button type="button" id="invitar-entrar">Iniciar sesión</button>
     </p>
   </div>
 </div>
@@ -253,19 +253,26 @@
 
 <div id="auth-overlay" class="auth-overlay" style="display:none">
   <form class="auth-modal" id="auth-form" novalidate>
-    <h2 id="auth-titulo">Entrar <span>·</span> Mi progreso</h2>
-    <p class="auth-sub" id="auth-sub">
-      Con una cuenta, el progreso te sigue a cualquier dispositivo.
-    </p>
+    <div class="auth-cabecera">
+      <h2 id="auth-titulo">Iniciar sesión</h2>
+      <button type="button" class="auth-x" id="auth-x"></button>
+    </div>
+    <p class="auth-sub" id="auth-sub"></p>
 
     <div class="auth-campo auth-solo-registro" id="auth-carreras-campo">
       <span>¿Qué estudiás?</span>
       <div class="auth-chips" id="auth-carreras"></div>
     </div>
-    <label class="auth-campo auth-solo-registro" id="auth-nombre-campo">
-      <span>Nombre</span>
-      <input type="text" id="auth-nombre" autocomplete="name" placeholder="Cómo te llamás">
-    </label>
+    <div class="auth-fila auth-solo-registro" id="auth-nombre-campo">
+      <label class="auth-campo">
+        <span>Nombre</span>
+        <input type="text" id="auth-nombre" autocomplete="given-name" placeholder="Lautaro">
+      </label>
+      <label class="auth-campo">
+        <span>Apellido</span>
+        <input type="text" id="auth-apellido" autocomplete="family-name" placeholder="Suau">
+      </label>
+    </div>
     <label class="auth-campo" id="auth-email-campo">
       <span>Mail</span>
       <input type="email" id="auth-email" autocomplete="email" required placeholder="vos@ejemplo.com">
@@ -296,8 +303,7 @@
     <p class="auth-error" id="auth-error" role="alert"></p>
 
     <div class="auth-acciones">
-      <button type="submit" class="primary" id="auth-submit">Entrar</button>
-      <button type="button" id="auth-cerrar">✕ Cerrar</button>
+      <button type="submit" class="primary" id="auth-submit">Iniciar sesión</button>
     </div>
 
     <button type="button" class="auth-google auth-solo-clave" id="auth-google">

@@ -199,10 +199,11 @@ export async function signIn({ email, password }) {
   return { user: adoptar(data.user) };
 }
 
-export async function signUp({ email, password, nombre }) {
+export async function signUp({ email, password, nombre, apellido }) {
   const client = await getClient();
+  const completo = [nombre, apellido].filter(Boolean).join(' ');
   const data = await pedir(() => client.auth.signUp.email({
-    email, password, name: nombre || email.split('@')[0],
+    email, password, name: completo || email.split('@')[0],
   }));
   // Sin verificar todavía: la cuenta existe pero no se entra hasta poner el
   // código. Antes se la daba por buena acá y la app dejaba entrar de una.

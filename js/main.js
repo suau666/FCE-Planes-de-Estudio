@@ -95,7 +95,7 @@ const $ = id => document.getElementById(id);
 
 function pintarSesion() {
   $('cuenta-btn').style.display = getUser() ? '' : 'none';
-  $('auth-btn').textContent = getUser() ? 'Salir' : 'Entrar';
+  $('auth-btn').textContent = getUser() ? 'Salir' : 'Iniciar sesión';
   $('auth-btn').title = getUser()
     ? `Cerrar la sesión de ${nombreVisible()}`
     : 'Guardar el progreso en tu cuenta';
@@ -107,28 +107,28 @@ function pintarSesion() {
 
 const TEXTOS = {
   [ENTRAR]: {
-    titulo: 'Entrar <span>·</span> Mi progreso',
-    sub: 'Con una cuenta, el progreso te sigue a cualquier dispositivo.',
-    submit: 'Entrar',
+    titulo: 'Iniciar sesión',
+    sub: '',
+    submit: 'Iniciar sesión',
     cambiarTexto: '¿Todavía no tenés cuenta?',
     cambiar: 'Crear una',
   },
   [REGISTRO]: {
-    titulo: 'Crear cuenta <span>·</span> Mi progreso',
-    sub: 'Lo que marcaste en esta visita se sube a la cuenta nueva.',
+    titulo: 'Crear cuenta',
+    sub: '',
     submit: 'Crear cuenta',
     cambiarTexto: '¿Ya tenés cuenta?',
-    cambiar: 'Entrar',
+    cambiar: 'Iniciar sesión',
   },
   [RECUPERAR]: {
-    titulo: 'Recuperar <span>·</span> Mi contraseña',
+    titulo: 'Recuperar mi contraseña',
     sub: 'Poné tu mail y te mandamos un link para elegir una nueva. Dura 15 minutos.',
     submit: 'Mandarme el link',
     cambiarTexto: '¿Te acordaste?',
-    cambiar: 'Entrar',
+    cambiar: 'Iniciar sesión',
   },
   [VERIFICAR]: {
-    titulo: 'Verificar <span>·</span> Tu mail',
+    titulo: 'Verificar tu mail',
     sub: '',   // lo arma pintarModo con el mail al que fue el código
     submit: 'Verificar',
     cambiarTexto: '¿Otro mail?',
@@ -272,7 +272,10 @@ function initAuthUI() {
     await recargarProgreso();
   });
 
-  $('auth-cerrar').addEventListener('click', cerrarModal);
+  $('auth-x').innerHTML = EQUIS;
+  $('auth-x').title = 'Cerrar';
+  $('auth-x').setAttribute('aria-label', 'Cerrar');
+  $('auth-x').addEventListener('click', cerrarModal);
   $('auth-overlay').addEventListener('click', e => {
     if (e.target === $('auth-overlay')) cerrarModal();
   });
@@ -312,6 +315,7 @@ function initAuthUI() {
       password: $('auth-password').value,
       password2: $('auth-password2').value,
       nombre: $('auth-nombre').value.trim(),
+      apellido: $('auth-apellido').value.trim(),
       codigo: $('auth-codigo').value.trim(),
     };
 
@@ -363,6 +367,11 @@ function initAuthUI() {
 // Cuando algo sale bien y conviene salir de la pantalla donde se estaba (la
 // contraseña, por ejemplo), el cartel va en su propio modal: así no queda un
 // mensaje verde perdido entre campos que ya no hacen falta.
+
+// Ícono `x` de Lucide, para cerrar.
+const EQUIS = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
 
 const TILDE = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
