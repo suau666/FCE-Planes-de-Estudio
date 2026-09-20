@@ -50,43 +50,86 @@ export async function initSesion() {
   }
 }
 
+// Better Auth contesta { message, code, status } y el mensaje viene en inglés.
+// Traducimos por código (estable) y, si no lo conocemos, por texto.
+const POR_CODIGO = {
+  INVALID_EMAIL_OR_PASSWORD: 'Mail o contraseña incorrectos.',
+  INVALID_EMAIL: 'Ese mail no parece válido.',
+  INVALID_PASSWORD: 'Mail o contraseña incorrectos.',
+  USER_NOT_FOUND: 'No hay ninguna cuenta con ese mail. Podés crear una.',
+  USER_ALREADY_EXISTS: 'Ya existe una cuenta con ese mail. Probá entrar.',
+  PASSWORD_TOO_SHORT: 'La contraseña necesita al menos 8 caracteres.',
+  PASSWORD_TOO_LONG: 'La contraseña es demasiado larga.',
+  EMAIL_NOT_VERIFIED: 'Te falta verificar el mail. Revisá tu casilla.',
+  TOO_MANY_REQUESTS: 'Demasiados intentos seguidos. Esperá un minuto.',
+  SESSION_EXPIRED: 'Se venció la sesión. Entrá de nuevo.',
+};
+
+const POR_TEXTO = {
+  'Invalid email or password': 'Mail o contraseña incorrectos.',
+  'User already exists': 'Ya existe una cuenta con ese mail. Probá entrar.',
+  'User not found': 'No hay ninguna cuenta con ese mail. Podés crear una.',
+  'Password too short': 'La contraseña necesita al menos 8 caracteres.',
+  'Invalid email': 'Ese mail no parece válido.',
+};
+
+// Traduce cualquier cosa que haya salido mal a una frase que se pueda mostrar.
+export function mensajeDeError(e) {
+  if (!e) return 'Algo salió mal.';
+  if (e.code && POR_CODIGO[e.code]) return POR_CODIGO[e.code];
+
+  const texto = e.message || String(e);
+  if (POR_TEXTO[texto]) return POR_TEXTO[texto];
+
+  // Errores de red: el navegador dice "Failed to fetch" y no aclara nada más.
+  if (/failed to fetch|networkerror|load failed/i.test(texto)) {
+    return 'No pude conectarme a la base. Fijate si tenés internet.';
+  }
+  if (e.status === 401 || /jwt|unauthorized|authentication/i.test(texto)) {
+    return 'Se venció la sesión. Cerrá y volvé a entrar.';
+  }
+  if (/permission denied/i.test(texto)) {
+    return 'La base no me dejó hacer eso. Revisá los permisos del esquema.';
+  }
+  return texto;
+}
+
 function fallo(error) {
-  // Better Auth: { message, status, code }. El mensaje suele venir en inglés.
-  const msg = error?.message || 'No pude completar la operación';
-  const traduccion = {
-    'Invalid email or password': 'Mail o contraseña incorrectos',
-    'User already exists': 'Ya hay una cuenta con ese mail',
-    'Password too short': 'La contraseña es muy corta',
-  };
-  throw new Error(traduccion[msg] || msg);
+  const e = new Error(mensajeDeError(error));
+  e.causa = error;
+  throw e;
+}
+
+// Better Auth tira excepción si no hay red; el resto viene en `error`.
+async function pedir(fn) {
+  let res;
+  try {
+    res = await fn();
+  } catch (e) {
+    fallo(e);
+  }
+  if (res?.error) fallo(res.error);
+  return res?.data;
 }
 
 export async function signIn({ email, password }) {
   const client = await getClient();
-  const { data, error } = await client.auth.signIn.email({ email, password });
-  if (error) fallo(error);
-  return adoptar(data?.user ?? null);
+  const data = await pedir(() => client.auth.signIn.email({ email, password }));
+  if (!data?.user) throw new Error('El servidor no devolvió la sesión. Probá de nuevo.');
+  return adoptar(data.user);
 }
 
 export async function signUp({ email, password, nombre }) {
   const client = await getClient();
-  const { data, error } = await client.auth.signUp.email({
+  const data = await pedir(() => client.auth.signUp.email({
     email, password, name: nombre || email.split('@')[0],
-  });
-  if (error) fallo(error);
-  // Según cómo esté configurado Neon Auth, puede pedir verificar el mail y no
-  // devolver sesión. En ese caso probamos entrar directo.
-  if (data?.user) return adoptar(data.user);
-  return signIn({ email, password });
-}
-
-export async function signInConGoogle() {
-  const client = await getClient();
-  const { error } = await client.auth.signIn.social({
-    provider: 'google',
-    callbackURL: location.href,
-  });
-  if (error) fallo(error);
+  }));
+  // Si Neon Auth pide verificar el mail, la cuenta queda creada pero sin
+  // sesión. Se avisa con un error claro en vez de dejar la pantalla igual.
+  if (!data?.user) {
+    throw new Error('Cuenta creada. Verificá el mail que te mandamos y después entrá.');
+  }
+  return adoptar(data.user);
 }
 
 export async function signOut() {

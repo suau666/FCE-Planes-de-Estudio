@@ -1,12 +1,11 @@
 import { CARRERAS, getCarrera } from './data/index.js';
-import { store, cargar, scheduleSave } from './core/state.js';
+import { store, cargar, scheduleSave, indicador } from './core/state.js';
 import { initEstados } from './core/rules.js';
 import { renderAll } from './core/render.js';
 import { drawArrows } from './core/arrows.js';
 import { openPlanner, initPlannerUI } from './core/planner.js';
 import {
-  initSesion, signIn, signUp, signInConGoogle, signOut,
-  getUser, nombreVisible,
+  initSesion, signIn, signUp, signOut, getUser, nombreVisible, mensajeDeError,
 } from './auth/session.js';
 import { hayNeon } from './config.js';
 
@@ -111,6 +110,16 @@ function pintarModo() {
   $('auth-error').textContent = '';
 }
 
+// Revisa el formulario antes de molestar al servidor. Devuelve el mensaje a
+// mostrar, o null si está todo bien.
+function revisarDatos({ email, password }) {
+  if (!email) return 'Escribí tu mail.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Ese mail no parece válido.';
+  if (!password) return 'Escribí tu contraseña.';
+  if (password.length < 8) return 'La contraseña necesita al menos 8 caracteres.';
+  return null;
+}
+
 function abrirModal() {
   pintarModo();
   $('auth-overlay').style.display = 'flex';
@@ -125,11 +134,12 @@ function cerrarModal() {
 
 // Después de entrar o salir, el progreso es otro: hay que traerlo y redibujar.
 async function recargarProgreso() {
-  const { subido } = await cargar();
+  const { subido, error } = await cargar();
   pintarSesion();
   aplicarTema(store.tema);
   irA(store.carreraActiva);
-  if (subido) console.info('Tu progreso de este dispositivo quedó en la cuenta.');
+  if (error) indicador(`✗ ${error}`, 'error', 6000);
+  else if (subido) indicador('✓ Tu progreso quedó en la cuenta', 'saved', 4000);
 }
 
 function initAuthUI() {
@@ -140,7 +150,11 @@ function initAuthUI() {
 
   $('auth-btn').addEventListener('click', async () => {
     if (!getUser()) return abrirModal();
-    await signOut();
+    try {
+      await signOut();
+    } catch (err) {
+      indicador(`✗ ${mensajeDeError(err)}`, 'error', 6000);
+    }
     await recargarProgreso();
   });
 
@@ -160,6 +174,10 @@ function initAuthUI() {
       password: $('auth-password').value,
       nombre: $('auth-nombre').value.trim(),
     };
+
+    const problema = revisarDatos(datos);
+    if (problema) { $('auth-error').textContent = problema; return; }
+
     $('auth-submit').disabled = true;
     $('auth-error').textContent = '';
     try {
@@ -167,19 +185,9 @@ function initAuthUI() {
       cerrarModal();
       await recargarProgreso();
     } catch (err) {
-      $('auth-error').textContent = err.message;
+      $('auth-error').textContent = mensajeDeError(err);
     } finally {
       $('auth-submit').disabled = false;
-    }
-  });
-
-  // Google redirige y vuelve a esta misma página ya con la sesión abierta.
-  $('auth-google').addEventListener('click', async () => {
-    $('auth-error').textContent = '';
-    try {
-      await signInConGoogle();
-    } catch (err) {
-      $('auth-error').textContent = err.message;
     }
   });
 }
@@ -191,7 +199,7 @@ async function boot() {
   initPlannerUI();
 
   await initSesion();
-  const { migrado } = await cargar();
+  const { migrado, subido, error } = await cargar();
 
   aplicarTema(store.tema);
   initAuthUI();
@@ -204,13 +212,25 @@ async function boot() {
   document.getElementById('loading-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
 
-  if (migrado) {
-    console.info('Progreso importado desde las apps separadas de Actuario y Sistemas.');
-  }
+  if (error) indicador(`✗ ${error}`, 'error', 7000);
+  else if (subido) indicador('✓ Tu progreso quedó en la cuenta', 'saved', 4000);
+  else if (migrado) indicador('✓ Progreso importado de las apps viejas', 'saved', 4000);
+}
+
+// Si el arranque se rompe (un import que no carga, la base caída), lo peor que
+// puede pasar es quedarse mirando los puntitos: mejor mostrar qué pasó.
+function bootRoto(e) {
+  console.error('Error al arrancar:', e);
+  const pantalla = document.getElementById('loading-screen');
+  pantalla.innerHTML = '';
+  const aviso = document.createElement('p');
+  aviso.className = 'boot-error';
+  aviso.textContent = `No pude arrancar la app. ${mensajeDeError(e)} Probá recargar la página.`;
+  pantalla.appendChild(aviso);
 }
 
 window.addEventListener('resize', () => {
   if (carrera?.completo) requestAnimationFrame(() => drawArrows(carrera, store.estados));
 });
 
-boot();
+boot().catch(bootRoto);

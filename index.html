@@ -115,7 +115,7 @@
 <div class="planner-toast" id="planner-toast"></div>
 
 <div id="auth-overlay" class="auth-overlay" style="display:none">
-  <form class="auth-modal" id="auth-form">
+  <form class="auth-modal" id="auth-form" novalidate>
     <h2 id="auth-titulo">Entrar <span>·</span> Mi progreso</h2>
     <p class="auth-sub" id="auth-sub">
       Con una cuenta, el progreso te sigue a cualquier dispositivo.
@@ -135,14 +135,12 @@
              minlength="8" placeholder="Al menos 8 caracteres">
     </label>
 
-    <p class="auth-error" id="auth-error"></p>
+    <p class="auth-error" id="auth-error" role="alert"></p>
 
     <div class="auth-acciones">
       <button type="submit" class="primary" id="auth-submit">Entrar</button>
       <button type="button" id="auth-cerrar">✕ Cerrar</button>
     </div>
-
-    <button type="button" class="auth-google" id="auth-google">Entrar con Google</button>
 
     <p class="auth-cambiar">
       <span id="auth-cambiar-texto">¿Todavía no tenés cuenta?</span>
