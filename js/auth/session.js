@@ -269,6 +269,14 @@ export async function cambiarContrasenaConLaActual(actual, nueva) {
   }));
 }
 
+// Con qué puede entrar esta cuenta: 'credential' es mail y contraseña,
+// 'google' es Google. Sirve para no ofrecer lo que ya tiene.
+export async function formasDeEntrar() {
+  const client = await getClient();
+  const cuentas = await pedir(() => client.auth.listAccounts());
+  return [...new Set((cuentas || []).map(c => c.providerId || c.provider))];
+}
+
 // Le agrega Google a la cuenta que ya está abierta. Redirige a Google y vuelve.
 export async function vincularGoogle() {
   const client = await getClient();

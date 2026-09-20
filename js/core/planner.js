@@ -7,6 +7,7 @@
 // El plan es propio de cada carrera (a diferencia del progreso, que es global).
 
 import { store, slotDe, scheduleSave } from './state.js';
+import { abrirOverlay, cerrarOverlay } from './modal.js';
 import { keyOf, directPrereqs } from './rules.js';
 
 const CAP_CUATRI = 4, CAP_INTENSIVO = 2;
@@ -305,7 +306,7 @@ export function openPlanner(carreraActual) {
   trimTrailingPeriods();
   renderPlanner();
 
-  document.getElementById('planner-overlay').style.display = 'flex';
+  abrirOverlay(document.getElementById('planner-overlay'));
   const msgs = [];
   if (vencidas.length) msgs.push(`Volvieron al listado (período pasado): ${vencidas.join(', ')}`);
   if (devueltas.length) msgs.push(`Volvieron al listado por correlatividades: ${devueltas.join(', ')}`);
@@ -314,7 +315,7 @@ export function openPlanner(carreraActual) {
 
 export function closePlanner() {
   document.getElementById('auto-menu').style.display = 'none';
-  document.getElementById('planner-overlay').style.display = 'none';
+  cerrarOverlay(document.getElementById('planner-overlay'));
 }
 
 // ── Toast ────────────────────────────────────────────────────────────────────

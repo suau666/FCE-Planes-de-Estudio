@@ -228,3 +228,4 @@ header p { font-family:'Space Mono',monospace; font-size:.7rem; letter-spacing:3
 .auth-chip.elegida { border-color:var(--accent); color:var(--accent); background:var(--bg); }
 .auth-chip-orden:empty { display:none; }
 .auth-chip-orden { font-size:.46rem; letter-spacing:1px; padding:2px 5px; border-radius:5px; background:var(--accent); color:var(--bg); }
+body.sin-scroll { overflow:hidden; }

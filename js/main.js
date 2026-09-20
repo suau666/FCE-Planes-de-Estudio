@@ -7,11 +7,13 @@ import { openPlanner, initPlannerUI } from './core/planner.js';
 import {
   initSesion, signIn, signUp, signInConGoogle, signOut, pedirResetDeContrasena,
   cambiarContrasenaConLaActual, vincularGoogle, mandarCodigo, verificarCodigo,
+  formasDeEntrar,
   errorDeRedireccion, getUser, nombreVisible, mensajeDeError,
 } from './auth/session.js';
 import { PAGINA_RESET } from './auth/reset-url.js';
 import { initOjos, ocultarOjos } from './auth/ojo.js';
 import { montarChips } from './core/chips.js';
+import { abrirOverlay, cerrarOverlay } from './core/modal.js';
 import { hayNeon } from './config.js';
 
 let carrera = null;
@@ -210,12 +212,12 @@ function abrirModal(enModo = ENTRAR) {
   chipsRegistro.poner(store.carreras);
   ocultarOjos($('auth-form'));
   pintarModo();
-  $('auth-overlay').style.display = 'flex';
+  abrirOverlay($('auth-overlay'));
   $('auth-email').focus();
 }
 
 function cerrarModal() {
-  $('auth-overlay').style.display = 'none';
+  cerrarOverlay($('auth-overlay'));
   $('auth-form').reset();
   $('auth-error').textContent = '';
   $('auth-ok').textContent = '';
@@ -348,33 +350,74 @@ function initAuthUI() {
 }
 
 // ── Mi cuenta ────────────────────────────────────────────────────────────────
-// Cambiar la contraseña sabiendo la actual, o pedir un mail para crear una
-// cuando se entró con Google y nunca hubo contraseña. Poner una contraseña sin
-// saber la anterior no se puede desde el navegador: Better Auth sólo expone
-// `set-password` del lado del servidor, y esta app no tiene servidor propio.
+// Muestra sólo lo que falta: si ya tiene contraseña ofrece cambiarla, si no,
+// crearla; y Google aparece únicamente si todavía no está vinculado. La lista
+// viene de Better Auth (`list-accounts`).
 
 let chipsCuenta = null;
 
-function abrirCuenta() {
+function pintarFormasDeEntrar({ clave, google, incierto = false }) {
+  const formas = [];
+  if (clave) formas.push('mail y contraseña');
+  if (google) formas.push('Google');
+
+  $('cuenta-formas').textContent = incierto
+    ? 'No pude confirmar cómo entrás a esta cuenta, así que te dejo las dos opciones.'
+    : formas.length ? `Hoy entrás con ${formas.join(' y ')}.`
+    : 'Todavía no tenés forma de entrar configurada.';
+
+  $('cuenta-clave-btn').textContent = clave
+    ? 'Cambiar mi contraseña'
+    : 'Mandarme un mail para crear una contraseña';
+  $('cuenta-clave-btn').dataset.tiene = clave ? 'si' : 'no';
+
+  $('cuenta-vincular').style.display = google ? 'none' : '';
+}
+
+async function abrirCuenta() {
   const user = getUser();
   if (!user) return;
   $('cuenta-mail').textContent = user.email || '';
   chipsCuenta.poner(store.carreras);
-  $('cuenta-form').reset();
-  ocultarOjos($('cuenta-form'));
   $('cuenta-error').textContent = '';
   $('cuenta-ok').textContent = '';
-  $('cuenta-overlay').style.display = 'flex';
-  $('cuenta-actual').focus();
+  $('cuenta-formas').textContent = 'Viendo cómo entrás…';
+  abrirOverlay($('cuenta-overlay'));
+
+  try {
+    const formas = await formasDeEntrar();
+    pintarFormasDeEntrar({
+      clave: formas.includes('credential'),
+      google: formas.includes('google'),
+    });
+  } catch (e) {
+    console.warn('No pude leer las formas de entrar:', e);
+    pintarFormasDeEntrar({ clave: true, google: false, incierto: true });
+  }
 }
 
 function cerrarCuenta() {
-  $('cuenta-overlay').style.display = 'none';
-  $('cuenta-form').reset();
+  cerrarOverlay($('cuenta-overlay'));
+}
+
+// ── Cambiar la contraseña, en su propio modal ────────────────────────────────
+
+function abrirClave() {
+  $('clave-form').reset();
+  ocultarOjos($('clave-form'));
+  $('clave-error').textContent = '';
+  $('clave-ok').textContent = '';
+  abrirOverlay($('clave-overlay'));
+  $('cuenta-actual').focus();
+}
+
+function cerrarClave() {
+  cerrarOverlay($('clave-overlay'));
+  $('clave-form').reset();
 }
 
 function revisarCambio(actual, nueva, nueva2) {
-  if (!actual) return 'Escribí tu contraseña actual. Si no tenés, usá el botón de abajo.';
+  if (!actual) return 'Escribí tu contraseña actual.';
   if (!nueva) return 'Escribí la contraseña nueva.';
   if (nueva.length < 8) return 'La contraseña nueva necesita al menos 8 caracteres.';
   if (nueva !== nueva2) return 'Las dos contraseñas nuevas no son iguales.';
@@ -382,8 +425,22 @@ function revisarCambio(actual, nueva, nueva2) {
   return null;
 }
 
+async function mandarMailDeContrasena() {
+  const user = getUser();
+  if (!user?.email) return;
+  $('cuenta-error').textContent = '';
+  $('cuenta-ok').textContent = '';
+  try {
+    await pedirResetDeContrasena(user.email, PAGINA_RESET);
+    $('cuenta-ok').textContent =
+      `Te mandamos un mail a ${user.email} con el link para elegir la contraseña.`;
+  } catch (err) {
+    $('cuenta-error').textContent = mensajeDeError(err);
+  }
+}
+
 function initCuentaUI() {
-  initOjos($('cuenta-form'));
+  initOjos($('clave-form'));
 
   // Cambiar de carrera se aplica al toque: no hay botón de guardar para esto.
   chipsCuenta = montarChips($('cuenta-carreras'), CARRERAS, {
@@ -409,43 +466,11 @@ function initCuentaUI() {
     if (e.target === $('cuenta-overlay')) cerrarCuenta();
   });
 
-  $('cuenta-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const actual = $('cuenta-actual').value;
-    const nueva = $('cuenta-nueva').value;
-    const nueva2 = $('cuenta-nueva2').value;
-
-    const problema = revisarCambio(actual, nueva, nueva2);
-    if (problema) { $('cuenta-error').textContent = problema; return; }
-
-    $('cuenta-guardar').disabled = true;
-    $('cuenta-error').textContent = '';
-    $('cuenta-ok').textContent = '';
-    try {
-      await cambiarContrasenaConLaActual(actual, nueva);
-      $('cuenta-form').reset();
-      ocultarOjos($('cuenta-form'));
-      $('cuenta-ok').textContent = 'Listo, ya tenés contraseña nueva.';
-    } catch (err) {
-      $('cuenta-error').textContent = mensajeDeError(err);
-    } finally {
-      $('cuenta-guardar').disabled = false;
-    }
-  });
-
-  // Sin contraseña previa: el mail de "me olvidé" sirve igual para crearla.
-  $('cuenta-mail-clave').addEventListener('click', async () => {
-    const user = getUser();
-    if (!user?.email) return;
-    $('cuenta-error').textContent = '';
-    $('cuenta-ok').textContent = '';
-    try {
-      await pedirResetDeContrasena(user.email, PAGINA_RESET);
-      $('cuenta-ok').textContent =
-        `Te mandamos un mail a ${user.email} con el link para elegir la contraseña.`;
-    } catch (err) {
-      $('cuenta-error').textContent = mensajeDeError(err);
-    }
+  // Con contraseña, el modal para cambiarla. Sin contraseña, el mail para
+  // crearla: `set-password` no existe para el navegador.
+  $('cuenta-clave-btn').addEventListener('click', () => {
+    if ($('cuenta-clave-btn').dataset.tiene === 'si') abrirClave();
+    else mandarMailDeContrasena();
   });
 
   $('cuenta-vincular').addEventListener('click', async () => {
@@ -454,6 +479,34 @@ function initCuentaUI() {
       await vincularGoogle();
     } catch (err) {
       $('cuenta-error').textContent = mensajeDeError(err);
+    }
+  });
+
+  $('clave-cerrar').addEventListener('click', cerrarClave);
+  $('clave-overlay').addEventListener('click', e => {
+    if (e.target === $('clave-overlay')) cerrarClave();
+  });
+
+  $('clave-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const actual = $('cuenta-actual').value;
+    const nueva = $('cuenta-nueva').value;
+    const nueva2 = $('cuenta-nueva2').value;
+
+    const problema = revisarCambio(actual, nueva, nueva2);
+    if (problema) { $('clave-error').textContent = problema; return; }
+
+    $('clave-guardar').disabled = true;
+    $('clave-error').textContent = '';
+    try {
+      await cambiarContrasenaConLaActual(actual, nueva);
+      $('clave-form').reset();
+      ocultarOjos($('clave-form'));
+      $('clave-ok').textContent = 'Listo, ya tenés contraseña nueva.';
+    } catch (err) {
+      $('clave-error').textContent = mensajeDeError(err);
+    } finally {
+      $('clave-guardar').disabled = false;
     }
   });
 }
@@ -507,11 +560,11 @@ function invitar(tipo) {
   const t = INVITACIONES[tipo];
   $('invitar-titulo').innerHTML = t.titulo;
   $('invitar-texto').textContent = t.texto;
-  $('invitar-overlay').style.display = 'flex';
+  abrirOverlay($('invitar-overlay'));
 }
 
 function cerrarInvitacion({ recordar = true } = {}) {
-  $('invitar-overlay').style.display = 'none';
+  cerrarOverlay($('invitar-overlay'));
   if (recordar) recordarQueLaCerro();
 }
 
