@@ -1,16 +1,19 @@
-// Elige dónde se guarda el progreso y migra los datos de las apps viejas.
+// Elige dónde se guarda el progreso y recupera lo que haya quedado guardado
+// en este dispositivo de antes.
 //
-// Con sesión abierta el progreso va a Neon; sin sesión, a este dispositivo.
-// El resto de la app no se entera: los dos adapters tienen `load()` y `save()`.
+// Con sesión abierta el progreso va a Neon. Sin sesión no se guarda: se puede
+// probar la app, pero al volver no queda nada. El resto de la app no se
+// entera; los tres adapters tienen `load()` y `save()`.
 
 import local from './local.js';
+import memoria from './memoria.js';
 import remoto from './remote.js';
 import { DOC_VACIO } from './doc.js';
 
-export { DOC_VACIO, local, remoto };
+export { DOC_VACIO, local, memoria, remoto };
 
 export function adapterPara(user) {
-  return user ? remoto : local;
+  return user ? remoto : memoria;
 }
 
 // ── Migración de las apps separadas ──────────────────────────────────────────

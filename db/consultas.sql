@@ -25,11 +25,11 @@ limit 20;
 -- ── La menos aprobada dentro de una carrera ─────────────────────────────────
 select m.codigo, cm.nombre_en_plan,
        count(*) filter (where pr.estado = 'aprobada') as aprobaron,
-       count(distinct p.id)                           as la_cursan
+       count(distinct pc.usuario_id)                  as la_cursan
 from carrera_materias cm
 join materias m on m.codigo = cm.codigo
-left join perfiles p  on p.carrera_id = cm.carrera_id
-left join progreso pr on pr.usuario_id = p.id and pr.codigo = cm.codigo
+left join perfil_carreras pc on pc.carrera_id = cm.carrera_id
+left join progreso pr on pr.usuario_id = pc.usuario_id and pr.codigo = cm.codigo
 where cm.carrera_id = 'actuario'
 group by m.codigo, cm.nombre_en_plan
 order by aprobaron asc;

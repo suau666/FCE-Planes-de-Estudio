@@ -221,3 +221,8 @@ header p { font-family:'Space Mono',monospace; font-size:.7rem; letter-spacing:3
 .auth-ojo:disabled { opacity:.4; cursor:default; }
 .auth-seccion { font-family:'Space Mono',monospace; font-size:.54rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-sub); border-top:1px solid var(--border); padding-top:14px; margin-top:4px; }
 .auth-modal h2 #cuenta-mail { color:var(--text-sub); font-size:.7rem; text-transform:none; letter-spacing:0; }
+.auth-campo span em { font-style:normal; text-transform:none; letter-spacing:0; opacity:.7; }
+.auth-chips { display:flex; flex-wrap:wrap; gap:6px; }
+.auth-chip { background:var(--surface); border:1px solid var(--border); color:var(--text-sub); border-radius:9px; padding:7px 11px; cursor:pointer; font-family:'Space Mono',monospace; font-size:.55rem; letter-spacing:1.2px; text-transform:uppercase; transition:all .15s; }
+.auth-chip:hover { border-color:var(--accent); color:var(--accent); }
+.auth-chip.elegida { border-color:var(--accent); color:var(--accent); background:var(--bg); }

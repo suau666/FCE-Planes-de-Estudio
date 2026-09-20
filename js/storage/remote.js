@@ -8,7 +8,8 @@
 //   doc.estados["actuario:opt1"]  → progreso_optativas  (slot por carrera)
 //   doc.porCarrera[c].optNames    → progreso_optativas.nombre
 //   doc.porCarrera[c].plan        → progreso_plan.plan  (jsonb)
-//   doc.tema, doc.carreraActiva   → perfiles
+//   doc.carreras                  → perfil_carreras     (la que estudia)
+//   doc.tema, doc.carreraActiva   → perfiles            (la última que miró)
 //
 // Sólo viajan las materias en regular o aprobada: "pendiente" y "puedo cursar"
 // se calculan con las correlativas.
@@ -28,11 +29,12 @@ const partirOptativa = clave => {
 
 // Evita reescribir tablas que no cambiaron: el guardado corre cada vez que se
 // toca una materia. Se reinicia al cambiar de usuario.
-let cache = { uid: null, progreso: '', optativas: '', planes: '', perfil: '' };
+const CACHE_VACIA = { progreso: '', optativas: '', planes: '', perfil: '', carreras: '' };
+let cache = { uid: null, ...CACHE_VACIA };
 
 function distinto(campo, uid, valor) {
   const s = JSON.stringify(valor);
-  if (cache.uid !== uid) cache = { uid, progreso: '', optativas: '', planes: '', perfil: '' };
+  if (cache.uid !== uid) cache = { uid, ...CACHE_VACIA };
   if (cache[campo] === s) return false;
   cache[campo] = s;
   return true;
@@ -52,26 +54,32 @@ export default {
     const uid = idUsuario();
     const client = await getClient();
 
-    const [perfil, progreso, optativas, planes] = await Promise.all([
+    const [perfil, progreso, optativas, planes, carreras] = await Promise.all([
       client.from('perfiles').select('carrera_id, tema').eq('id', uid).maybeSingle(),
       client.from('progreso').select('codigo, estado').eq('usuario_id', uid),
       client.from('progreso_optativas').select('carrera_id, slot, nombre, estado')
         .eq('usuario_id', uid),
       client.from('progreso_plan').select('carrera_id, plan').eq('usuario_id', uid),
+      client.from('perfil_carreras').select('carrera_id, orden').eq('usuario_id', uid)
+        .order('orden'),
     ]);
 
     const fila = chequear(perfil, 'leer el perfil');
     const materias = chequear(progreso, 'leer el progreso') || [];
     const opts = chequear(optativas, 'leer las optativas') || [];
     const mapas = chequear(planes, 'leer el planificador') || [];
+    const estudia = chequear(carreras, 'leer tus carreras') || [];
 
     // Cuenta nueva: no hay nada que traer. `null` hace que state.js suba lo
     // que haya en este dispositivo.
-    if (!fila && !materias.length && !opts.length && !mapas.length) return null;
+    if (!fila && !materias.length && !opts.length && !mapas.length && !estudia.length) {
+      return null;
+    }
 
     const doc = structuredClone(DOC_VACIO);
     if (fila?.tema) doc.tema = fila.tema;
     if (fila?.carrera_id) doc.carreraActiva = fila.carrera_id;
+    doc.carreras = estudia.map(c => c.carrera_id);
 
     for (const m of materias) doc.estados[m.codigo] = A_APP[m.estado] || 'pending';
 
@@ -90,12 +98,21 @@ export default {
   async save(doc) {
     const uid = idUsuario();
     const client = await getClient();
-    const { progreso, optativas, planes, perfil } = aFilas(uid, doc);
+    const { progreso, optativas, planes, perfil, carreras } = aFilas(uid, doc);
 
     // Cada bloque: primero borra lo que ya no está, después inserta el resto.
     // Las tres tablas son independientes entre sí.
     if (distinto('perfil', uid, perfil)) {
       chequear(await client.from('perfiles').upsert(perfil), 'guardar el perfil');
+    }
+
+    if (distinto('carreras', uid, carreras)) {
+      chequear(await client.from('perfil_carreras').delete().eq('usuario_id', uid),
+        'limpiar tus carreras');
+      if (carreras.length) {
+        chequear(await client.from('perfil_carreras').upsert(carreras,
+          { onConflict: 'usuario_id,carrera_id' }), 'guardar tus carreras');
+      }
     }
 
     if (distinto('progreso', uid, progreso)) {
@@ -138,6 +155,11 @@ export function aFilas(uid, doc) {
     tema: doc.tema || 'dark',
   };
 
+  // Dos como máximo: lo mismo que pide el formulario y que cuida la base.
+  const carreras = (doc.carreras || []).slice(0, 2).map((carreraId, i) => ({
+    usuario_id: uid, carrera_id: carreraId, orden: i + 1,
+  }));
+
   const progreso = [];
   const estadoOpt = {};   // "carrera:slot" → estado
   for (const [clave, estado] of Object.entries(doc.estados || {})) {
@@ -173,7 +195,7 @@ export function aFilas(uid, doc) {
     }
   }
 
-  return { progreso, optativas, planes, perfil };
+  return { progreso, optativas, planes, perfil, carreras };
 }
 
 function cachearDesde(uid, doc) {

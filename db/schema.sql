@@ -57,6 +57,19 @@ create table if not exists perfiles (
   creado_en  timestamptz not null default now()
 );
 
+-- Qué carrera (o dos) estudia cada uno. Se elige al crear la cuenta y es lo
+-- que da el "cuánta gente hay en cada carrera". `orden` 1 es la principal: la
+-- que se abre al entrar. Dos como máximo, y eso lo cuida el índice de abajo.
+create table if not exists perfil_carreras (
+  usuario_id uuid not null references perfiles(id) on delete cascade,
+  carrera_id text not null references carreras(id) on delete cascade,
+  orden      int  not null default 1 check (orden between 1 and 2),
+  primary key (usuario_id, carrera_id)
+);
+
+create unique index if not exists perfil_carreras_orden_idx
+  on perfil_carreras (usuario_id, orden);
+
 -- Sólo se guarda lo que el usuario marcó. Pendiente y "puedo cursar" se
 -- calculan con las correlativas, no se guardan.
 create table if not exists progreso (
@@ -96,6 +109,7 @@ alter table perfiles           enable row level security;
 alter table progreso           enable row level security;
 alter table progreso_optativas enable row level security;
 alter table progreso_plan       enable row level security;
+alter table perfil_carreras     enable row level security;
 
 create policy "cada uno su perfil" on perfiles
   for all to authenticated
@@ -106,6 +120,10 @@ create policy "cada uno su progreso" on progreso
   using (auth.user_id() = usuario_id::text) with check (auth.user_id() = usuario_id::text);
 
 create policy "cada uno sus optativas" on progreso_optativas
+  for all to authenticated
+  using (auth.user_id() = usuario_id::text) with check (auth.user_id() = usuario_id::text);
+
+create policy "cada uno sus carreras" on perfil_carreras
   for all to authenticated
   using (auth.user_id() = usuario_id::text) with check (auth.user_id() = usuario_id::text);
 
@@ -129,7 +147,7 @@ grant usage on schema public to anonymous, authenticated;
 grant select on carreras, materias, carrera_materias, correlativas
   to anonymous, authenticated;
 grant select, insert, update, delete
-  on perfiles, progreso, progreso_optativas, progreso_plan
+  on perfiles, progreso, progreso_optativas, progreso_plan, perfil_carreras
   to authenticated;
 
 -- ── Estadísticas ────────────────────────────────────────────────────────────
@@ -149,7 +167,8 @@ select
   round(100 * avg(u.aprobadas) / nullif(count(distinct cm.codigo), 0), 1)
                                                           as porcentaje_aprobado
 from carreras c
-left join perfiles p on p.carrera_id = c.id
+left join perfil_carreras pc on pc.carrera_id = c.id
+left join perfiles p on p.id = pc.usuario_id
 left join carrera_materias cm on cm.carrera_id = c.id
 left join lateral (
   select count(*) as aprobadas
@@ -173,7 +192,8 @@ select
         / nullif(count(distinct p.id), 0), 1)             as porcentaje_aprobado
 from materias m
 join carrera_materias cm on cm.codigo = m.codigo
-left join perfiles p on p.carrera_id = cm.carrera_id
+left join perfil_carreras pc on pc.carrera_id = cm.carrera_id
+left join perfiles p on p.id = pc.usuario_id
 left join progreso pr on pr.usuario_id = p.id and pr.codigo = m.codigo
 group by m.codigo, m.nombre
 order by porcentaje_aprobado nulls last;

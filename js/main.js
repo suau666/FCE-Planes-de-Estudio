@@ -90,6 +90,7 @@ const ENTRAR = 'entrar', REGISTRO = 'registro';
 const RECUPERAR = 'recuperar', VERIFICAR = 'verificar';
 let modo = ENTRAR;
 let mailAVerificar = '';
+let carrerasElegidas = [];   // al crear cuenta: una, o dos como máximo
 
 const $ = id => document.getElementById(id);
 
@@ -100,6 +101,9 @@ function pintarSesion() {
   $('auth-btn').title = getUser()
     ? `Cerrar la sesión de ${nombreVisible()}`
     : 'Guardar el progreso en tu cuenta';
+  $('planner-btn').title = getUser()
+    ? 'Armar tu plan de cuatrimestres'
+    : 'Necesitás una cuenta para planificar cuatrimestres';
 }
 
 const TEXTOS = {
@@ -112,7 +116,7 @@ const TEXTOS = {
   },
   [REGISTRO]: {
     titulo: 'Crear cuenta <span>·</span> Mi progreso',
-    sub: 'Lo que ya marcaste en este dispositivo se sube a la cuenta nueva.',
+    sub: 'Lo que marcaste en esta visita se sube a la cuenta nueva.',
     submit: 'Crear cuenta',
     cambiarTexto: '¿Ya tenés cuenta?',
     cambiar: 'Entrar',
@@ -132,6 +136,45 @@ const TEXTOS = {
     cambiar: 'Volver',
   },
 };
+
+// Los chips de "¿qué estudiás?". La primera elegida es la principal: es la que
+// se abre al entrar, y la que cuenta en las estadísticas de la carrera.
+const MAX_CARRERAS = 2;
+
+function pintarChips() {
+  for (const chip of document.querySelectorAll('#auth-carreras .auth-chip')) {
+    const puesto = carrerasElegidas.indexOf(chip.dataset.carrera);
+    chip.classList.toggle('elegida', puesto >= 0);
+    chip.title = puesto === 0 ? 'Tu carrera principal: es la que se abre al entrar'
+      : puesto > 0 ? 'Tu segunda carrera'
+      : 'Tocá para elegirla';
+  }
+}
+
+function initChips() {
+  const cont = $('auth-carreras');
+  for (const c of CARRERAS) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'auth-chip';
+    chip.dataset.carrera = c.id;
+    chip.textContent = c.titulo;
+    chip.addEventListener('click', () => {
+      const i = carrerasElegidas.indexOf(c.id);
+      if (i >= 0) carrerasElegidas.splice(i, 1);
+      else if (carrerasElegidas.length < MAX_CARRERAS) carrerasElegidas.push(c.id);
+      else {
+        $('auth-error').textContent =
+          'Dos carreras como máximo. Sacá una si querés cambiarla.';
+        return;
+      }
+      $('auth-error').textContent = '';
+      pintarChips();
+    });
+    cont.appendChild(chip);
+  }
+  pintarChips();
+}
 
 function mostrar(selector, si) {
   for (const el of document.querySelectorAll(selector)) {
@@ -180,12 +223,15 @@ function revisarDatos({ email, password, password2, codigo }) {
   if (modo === REGISTRO) {
     if (!password2) return 'Repetí la contraseña para confirmarla.';
     if (password !== password2) return 'Las dos contraseñas no son iguales.';
+    if (!carrerasElegidas.length) return 'Elegí qué carrera estudiás.';
   }
   return null;
 }
 
 function abrirModal(enModo = ENTRAR) {
   modo = enModo;
+  carrerasElegidas = [...(store.carreras || [])];
+  pintarChips();
   ocultarOjos($('auth-form'));
   pintarModo();
   $('auth-overlay').style.display = 'flex';
@@ -199,12 +245,18 @@ function cerrarModal() {
   $('auth-ok').textContent = '';
 }
 
+// La carrera que eligió al registrarse es la que abre siempre; `carreraActiva`
+// es sólo la última que miró y no pisa a la principal.
+function carreraDeArranque() {
+  return store.carreras?.[0] || store.carreraActiva;
+}
+
 // Después de entrar o salir, el progreso es otro: hay que traerlo y redibujar.
 async function recargarProgreso() {
   const { subido, error } = await cargar();
   pintarSesion();
   aplicarTema(store.tema);
-  irA(store.carreraActiva);
+  irA(carreraDeArranque());
   if (error) indicador(`✗ ${error}`, 'error', 6000);
   else if (subido) indicador('✓ Tu progreso quedó en la cuenta', 'saved', 4000);
 }
@@ -218,6 +270,7 @@ function mostrarFalloDeGoogle(motivo) {
 function initAuthUI() {
   pintarSesion();
   initOjos($('auth-form'));
+  initChips();
 
   // Sin Neon configurado no hay cuentas: el progreso vive en el dispositivo.
   if (!hayNeon) { $('auth-btn').style.display = 'none'; return; }
@@ -292,6 +345,12 @@ function initAuthUI() {
         cerrarModal();
         await recargarProgreso();
       } else {
+        // Lo que eligió viaja con el resto del progreso: `cargar()` sube todo
+        // junto cuando la cuenta queda abierta.
+        if (modo === REGISTRO) {
+          store.carreras = [...carrerasElegidas];
+          store.carreraActiva = carrerasElegidas[0] || store.carreraActiva;
+        }
         const r = await (modo === REGISTRO ? signUp(datos) : signIn(datos));
         // Neon quedó esperando el código del mail: no hay sesión todavía.
         if (r?.verificar) {
@@ -415,10 +474,21 @@ async function boot() {
   initAuthUI();
   initCuentaUI();
   document.getElementById('planner-btn')
-    .addEventListener('click', () => openPlanner(carrera));
+    .addEventListener('click', () => {
+      // El planificador arma un plan para varios cuatrimestres: sin cuenta se
+      // perdería al recargar, así que pide entrar antes.
+      if (!getUser()) {
+        abrirModal(ENTRAR);
+        $('auth-error').textContent =
+          'Para planificar tus cuatrimestres necesitás una cuenta: el plan se '
+          + 'guarda ahí, no en este dispositivo.';
+        return;
+      }
+      openPlanner(carrera);
+    });
 
   const pedida = new URL(location).searchParams.get('c');
-  irA(pedida || store.carreraActiva);
+  irA(pedida || carreraDeArranque());
 
   document.getElementById('loading-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';

@@ -10,6 +10,13 @@ export function slotDe(carreraId) {
   return store.porCarrera[carreraId] ??= { optNames: {}, plan: {} };
 }
 
+// `initEstados` deja en `estados` también las pendientes y las que se pueden
+// cursar, así que la presencia de claves no dice nada: progreso es haber
+// marcado algo a mano.
+export function hayProgreso(doc = store) {
+  return Object.values(doc.estados || {}).some(e => e === 'regular' || e === 'approved');
+}
+
 // Deja `store` con el contenido de `doc` y nada de lo anterior: al entrar o
 // salir de una cuenta el progreso tiene que cambiar entero, no mezclarse.
 function reemplazar(doc) {
@@ -35,15 +42,19 @@ export async function cargar() {
     // no dejar la pantalla en blanco, pero se avisa.
     console.error('Error al traer el progreso:', e);
     error = mensajeDeError(e);
-    reemplazar(await local.load() || {});
+    // Se deja lo que ya estaba en pantalla: perder lo marcado por un error de
+    // red sería peor que seguir mostrándolo.
     return { migrado, subido, error };
   }
 
-  if (!doc) {
-    // Cuenta recién creada: se lleva lo de este dispositivo, si hay algo.
-    if (user) doc = await local.load();
+  if (!doc && user) {
+    // Cuenta recién creada. Se lleva, en orden: lo que la persona acaba de
+    // marcar en esta visita, lo que hubiera quedado guardado en el navegador
+    // de antes, y por último lo de las apps separadas.
+    if (hayProgreso() || store.carreras?.length) doc = structuredClone(store);
+    if (!doc) doc = await local.load();
     if (!doc) { doc = migrarDesdeAppsViejas(); migrado = Boolean(doc); }
-    subido = Boolean(user && doc);
+    subido = Boolean(doc);
   }
 
   reemplazar(doc || {});
@@ -69,7 +80,23 @@ export function scheduleSave() {
   timer = setTimeout(guardar, 800);
 }
 
+// Sin cuenta no hay nada que guardar, pero callarse sería peor: la persona
+// tiene que enterarse ANTES de irse de que lo que marcó no va a estar cuando
+// vuelva. El primer aviso es largo; los siguientes, cortos.
+let avisosSinCuenta = 0;
+
 async function guardar() {
+  if (!getUser()) {
+    // Al abrir la app y al cambiar de carrera también se guarda: sin nada
+    // marcado no hay nada que avisar.
+    if (!hayProgreso()) return;
+    const primero = avisosSinCuenta++ === 0;
+    indicador(
+      primero ? 'Sin cuenta esto no se guarda — creá una para no perderlo'
+              : 'No se guarda sin cuenta',
+      'error', primero ? 6000 : 2200);
+    return;
+  }
   try {
     await adapterPara(getUser()).save(store);
     indicador('✓ Guardado', 'saved', 1800);
