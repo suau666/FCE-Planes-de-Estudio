@@ -209,3 +209,5 @@ header p { font-family:'Space Mono',monospace; font-size:.7rem; letter-spacing:3
 .auth-cambiar { display:flex; gap:6px; justify-content:center; align-items:center; font-family:'Space Mono',monospace; font-size:.56rem; letter-spacing:.5px; color:var(--text-sub); }
 .auth-cambiar button { background:none; border:none; padding:0; color:var(--accent); cursor:pointer; font-family:inherit; font-size:inherit; text-decoration:underline; }
 .boot-error { font-family:'Space Mono',monospace; font-size:.7rem; line-height:2; color:var(--text-main); text-align:center; max-width:440px; padding:0 20px; }
+.auth-ver { align-self:flex-start; background:none; border:none; padding:0; cursor:pointer; color:var(--text-sub); font-family:'Space Mono',monospace; font-size:.54rem; letter-spacing:1.5px; text-transform:uppercase; text-decoration:underline; transition:color .15s; }
+.auth-ver:hover { color:var(--accent); }

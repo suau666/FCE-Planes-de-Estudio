@@ -63,6 +63,8 @@ const POR_CODIGO = {
   EMAIL_NOT_VERIFIED: 'Te falta verificar el mail. Revisá tu casilla.',
   TOO_MANY_REQUESTS: 'Demasiados intentos seguidos. Esperá un minuto.',
   SESSION_EXPIRED: 'Se venció la sesión. Entrá de nuevo.',
+  INVALID_ORIGIN: 'Neon Auth no tiene permitido este dominio. Agregalo en los '
+    + 'orígenes permitidos de la consola de Neon.',
 };
 
 const POR_TEXTO = {
@@ -71,6 +73,8 @@ const POR_TEXTO = {
   'User not found': 'No hay ninguna cuenta con ese mail. Podés crear una.',
   'Password too short': 'La contraseña necesita al menos 8 caracteres.',
   'Invalid email': 'Ese mail no parece válido.',
+  'Invalid origin': 'Neon Auth no tiene permitido este dominio. Agregalo en los '
+    + 'orígenes permitidos de la consola de Neon.',
 };
 
 // Traduce cualquier cosa que haya salido mal a una frase que se pueda mostrar.
@@ -87,6 +91,10 @@ export function mensajeDeError(e) {
   }
   if (e.status === 401 || /jwt|unauthorized|authentication/i.test(texto)) {
     return 'Se venció la sesión. Cerrá y volvé a entrar.';
+  }
+  if (/invalid origin/i.test(texto)) {
+    return `Neon Auth no tiene permitido ${location.origin}. Agregalo en los `
+      + 'orígenes permitidos de la consola de Neon.';
   }
   if (/permission denied/i.test(texto)) {
     return 'La base no me dejó hacer eso. Revisá los permisos del esquema.';

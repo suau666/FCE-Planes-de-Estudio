@@ -101,26 +101,47 @@ function pintarModo() {
   $('auth-sub').textContent = modoRegistro
     ? 'Lo que ya marcaste en este dispositivo se sube a la cuenta nueva.'
     : 'Con una cuenta, el progreso te sigue a cualquier dispositivo.';
-  $('auth-nombre-campo').style.display = modoRegistro ? 'flex' : 'none';
+  for (const el of document.querySelectorAll('.auth-solo-registro')) {
+    el.style.display = modoRegistro ? 'flex' : 'none';
+  }
   $('auth-submit').textContent = modoRegistro ? 'Crear cuenta' : 'Entrar';
   $('auth-cambiar-texto').textContent = modoRegistro
     ? '¿Ya tenés cuenta?' : '¿Todavía no tenés cuenta?';
   $('auth-cambiar').textContent = modoRegistro ? 'Entrar' : 'Crear una';
   $('auth-password').autocomplete = modoRegistro ? 'new-password' : 'current-password';
   $('auth-error').textContent = '';
+  pintarVer();
 }
 
 // Revisa el formulario antes de molestar al servidor. Devuelve el mensaje a
 // mostrar, o null si está todo bien.
-function revisarDatos({ email, password }) {
+function revisarDatos({ email, password, password2 }) {
   if (!email) return 'Escribí tu mail.';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Ese mail no parece válido.';
   if (!password) return 'Escribí tu contraseña.';
   if (password.length < 8) return 'La contraseña necesita al menos 8 caracteres.';
+  if (modoRegistro) {
+    if (!password2) return 'Repetí la contraseña para confirmarla.';
+    if (password !== password2) return 'Las dos contraseñas no son iguales.';
+  }
   return null;
 }
 
+// Ver lo que se escribe evita la mitad de los errores de tipeo. El botón
+// cambia las dos cajas a la vez, así se pueden comparar de un vistazo.
+let verClaves = false;
+
+function pintarVer() {
+  const tipo = verClaves ? 'text' : 'password';
+  $('auth-password').type = tipo;
+  $('auth-password2').type = tipo;
+  $('auth-ver').textContent = verClaves
+    ? (modoRegistro ? 'Ocultar contraseñas' : 'Ocultar contraseña')
+    : (modoRegistro ? 'Ver contraseñas' : 'Ver contraseña');
+}
+
 function abrirModal() {
+  verClaves = false;
   pintarModo();
   $('auth-overlay').style.display = 'flex';
   $('auth-email').focus();
@@ -162,6 +183,11 @@ function initAuthUI() {
   $('auth-overlay').addEventListener('click', e => {
     if (e.target === $('auth-overlay')) cerrarModal();
   });
+  $('auth-ver').addEventListener('click', () => {
+    verClaves = !verClaves;
+    pintarVer();
+  });
+
   $('auth-cambiar').addEventListener('click', () => {
     modoRegistro = !modoRegistro;
     pintarModo();
@@ -172,6 +198,7 @@ function initAuthUI() {
     const datos = {
       email: $('auth-email').value.trim(),
       password: $('auth-password').value,
+      password2: $('auth-password2').value,
       nombre: $('auth-nombre').value.trim(),
     };
 
