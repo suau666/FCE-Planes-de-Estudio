@@ -4,7 +4,7 @@
 // "Mi cuenta". El orden importa y se ve: la primera dice PRINCIPAL, porque es
 // la que abre la app y la que cuenta en las estadísticas.
 
-export function montarChips(cont, opciones, { max = 2, alPasarse, alCambiar } = {}) {
+export function montarChips(cont, opciones, { max = 2, min = 0, alPasarse, alQuedarseCorto, alCambiar } = {}) {
   let elegidas = [];
 
   function pintar() {
@@ -34,9 +34,16 @@ export function montarChips(cont, opciones, { max = 2, alPasarse, alCambiar } = 
 
     chip.addEventListener('click', () => {
       const i = elegidas.indexOf(o.id);
-      if (i >= 0) elegidas.splice(i, 1);
-      else if (elegidas.length < max) elegidas.push(o.id);
-      else return alPasarse?.(max);
+      if (i >= 0) {
+        // Sacar la última dejaría a la cuenta sin carrera principal, y eso no
+        // puede pasar: para cambiarla se elige la otra primero.
+        if (elegidas.length <= min) return alQuedarseCorto?.(min);
+        elegidas.splice(i, 1);
+      } else if (elegidas.length < max) {
+        elegidas.push(o.id);
+      } else {
+        return alPasarse?.(max);
+      }
       pintar();
       alCambiar?.([...elegidas]);
     });

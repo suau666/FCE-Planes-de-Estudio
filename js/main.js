@@ -94,12 +94,12 @@ let mailAVerificar = '';
 const $ = id => document.getElementById(id);
 
 function pintarSesion() {
-  $('usuario').textContent = nombreVisible();
   $('cuenta-btn').style.display = getUser() ? '' : 'none';
   $('auth-btn').textContent = getUser() ? 'Salir' : 'Entrar';
   $('auth-btn').title = getUser()
     ? `Cerrar la sesión de ${nombreVisible()}`
     : 'Guardar el progreso en tu cuenta';
+  $('cuenta-btn').title = getUser() ? `Tu cuenta: ${nombreVisible()}` : '';
   $('planner-btn').title = getUser()
     ? 'Armar tu plan de cuatrimestres'
     : 'Necesitás una cuenta para planificar cuatrimestres';
@@ -144,6 +144,11 @@ let chipsRegistro = null;
 function initChips() {
   chipsRegistro = montarChips($('auth-carreras'), CARRERAS, {
     max: MAX_CARRERAS,
+    min: 1,
+    alQuedarseCorto: () => {
+      $('auth-error').textContent =
+        'Elegí al menos una carrera. Si te equivocaste, tocá la correcta y esta se saca sola.';
+    },
     alPasarse: max => {
       $('auth-error').textContent =
         `${max} carreras como máximo. Sacá una si querés cambiarla.`;
@@ -180,7 +185,6 @@ function pintarModo() {
   $('auth-password').autocomplete = modo === REGISTRO ? 'new-password' : 'current-password';
 
   $('auth-error').textContent = '';
-  $('auth-ok').textContent = '';
 }
 
 // Revisa el formulario antes de molestar al servidor. Devuelve el mensaje a
@@ -217,7 +221,6 @@ function cerrarModal() {
   cerrarOverlay($('auth-overlay'));
   $('auth-form').reset();
   $('auth-error').textContent = '';
-  $('auth-ok').textContent = '';
 }
 
 // La carrera que eligió al registrarse es la que abre siempre; `carreraActiva`
@@ -280,10 +283,10 @@ function initAuthUI() {
 
   $('auth-reenviar').addEventListener('click', async () => {
     $('auth-error').textContent = '';
-    $('auth-ok').textContent = '';
     try {
       await mandarCodigo(mailAVerificar);
-      $('auth-ok').textContent = `Te mandamos otro código a ${mailAVerificar}.`;
+      mostrarExito('Código reenviado',
+        `Te mandamos otro código de 6 dígitos a ${mailAVerificar}.`);
     } catch (err) {
       $('auth-error').textContent = mensajeDeError(err);
     }
@@ -317,13 +320,14 @@ function initAuthUI() {
 
     $('auth-submit').disabled = true;
     $('auth-error').textContent = '';
-    $('auth-ok').textContent = '';
     try {
       if (modo === RECUPERAR) {
         await pedirResetDeContrasena(datos.email, PAGINA_RESET);
+        cerrarModal();
         // A propósito no decimos si el mail existe o no.
-        $('auth-ok').textContent =
-          'Si hay una cuenta con ese mail, ya te mandamos el link. Revisá tu casilla.';
+        mostrarExito('Revisá tu casilla',
+          'Si hay una cuenta con ese mail, te mandamos un link para elegir una '
+          + 'contraseña nueva. Dura 15 minutos.');
       } else if (modo === VERIFICAR) {
         await verificarCodigo(mailAVerificar, datos.codigo);
         cerrarModal();
@@ -409,7 +413,6 @@ async function abrirCuenta() {
   $('cuenta-mail').textContent = user.email || '';
   chipsCuenta.poner(store.carreras);
   $('cuenta-error').textContent = '';
-  $('cuenta-ok').textContent = '';
   $('cuenta-formas').textContent = 'Viendo cómo entrás…';
   abrirOverlay($('cuenta-overlay'));
 
@@ -456,7 +459,6 @@ function pintarModoClave() {
     ? 'Mandalo de nuevo' : 'Mandame un código';
 
   $('clave-error').textContent = '';
-  $('clave-ok').textContent = '';
 }
 
 async function pedirCodigoDeClave() {
@@ -466,7 +468,9 @@ async function pedirCodigoDeClave() {
     await mandarCodigoDeContrasena(user.email);
     modoClave = CON_CODIGO;
     pintarModoClave();
-    $('clave-ok').textContent = `Código mandado a ${user.email}.`;
+    mostrarExito('Código enviado',
+      `Te mandamos un código de 6 dígitos a ${user.email}. Ponelo junto con la `
+      + 'contraseña nueva.');
     $('clave-codigo').focus();
   } catch (err) {
     $('clave-error').textContent = mensajeDeError(err);
@@ -510,7 +514,6 @@ function revisarCambio({ actual, codigo, nueva, nueva2 }) {
 function abrirBorrar() {
   $('borrar-form').reset();
   $('borrar-error').textContent = '';
-  $('borrar-ok').textContent = '';
   abrirOverlay($('borrar-overlay'));
   $('borrar-palabra').focus();
 }
@@ -526,18 +529,20 @@ function initCuentaUI() {
   // Cambiar de carrera se aplica al toque: no hay botón de guardar para esto.
   chipsCuenta = montarChips($('cuenta-carreras'), CARRERAS, {
     max: MAX_CARRERAS,
+    min: 1,
     alPasarse: max => {
       $('cuenta-error').textContent =
         `${max} carreras como máximo. Sacá una si querés cambiarla.`;
+    },
+    alQuedarseCorto: () => {
+      $('cuenta-error').textContent =
+        'Tenés que estudiar al menos una carrera. Elegí la otra y esta se saca sola.';
     },
     alCambiar: elegidas => {
       $('cuenta-error').textContent = '';
       store.carreras = elegidas;
       if (elegidas[0] && elegidas[0] !== store.carreraActiva) irA(elegidas[0]);
       else scheduleSave();
-      $('cuenta-ok').textContent = elegidas.length
-        ? 'Listo, guardamos tu carrera.'
-        : 'Te quedaste sin carrera elegida: elegí al menos una.';
     },
   });
 
@@ -616,7 +621,6 @@ function initCuentaUI() {
 
     $('clave-guardar').disabled = true;
     $('clave-error').textContent = '';
-    $('clave-ok').textContent = '';
     try {
       if (modoClave === CON_CODIGO) {
         await ponerContrasenaConCodigo(getUser().email, datos.codigo, datos.nueva);

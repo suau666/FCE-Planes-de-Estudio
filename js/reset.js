@@ -45,10 +45,11 @@ function init() {
     $('reset-error').textContent = '';
     try {
       await cambiarContrasena(token, password);
-      $('reset-ok').textContent =
-        'Listo, ya podés entrar con la contraseña nueva.';
-      $('reset-form').querySelectorAll('input').forEach(el => { el.disabled = true; });
-      setTimeout(() => { location.href = 'index.html'; }, 2500);
+      // Esta página no tiene modales: se avisa en el texto de arriba y se
+      // vuelve al plan, que es a donde iba la persona.
+      $('reset-sub').textContent = 'Contraseña cambiada. Te llevo al plan…';
+      $('reset-form').querySelectorAll('input, button').forEach(el => { el.disabled = true; });
+      setTimeout(() => { location.href = 'index.html'; }, 1800);
     } catch (err) {
       $('reset-error').textContent = mensajeDeError(err);
       $('reset-submit').disabled = false;

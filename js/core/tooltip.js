@@ -6,6 +6,10 @@ function nodo() {
 }
 
 export function showTip(e, texto) {
+  // Sin nada para decir no hay tooltip: si no, queda un cuadradito vacío
+  // siguiendo al mouse por las materias ya aprobadas.
+  if (!texto) return hideTip();
+
   const t = nodo();
   t.innerHTML = texto.replace(/\n/g, '<br>');
   t.classList.add('visible');

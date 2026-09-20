@@ -20,9 +20,10 @@
 </div>
 
 <div class="topbar">
-  <span class="usuario" id="usuario"></span>
-  <button class="auth-btn" id="cuenta-btn" style="display:none">Mi cuenta</button>
-  <button class="auth-btn" id="auth-btn">Entrar</button>
+  <div class="topbar-izq">
+    <button class="auth-btn" id="cuenta-btn" style="display:none">Mi cuenta</button>
+    <button class="auth-btn" id="auth-btn">Entrar</button>
+  </div>
   <div class="theme-switcher" id="theme-switcher"></div>
 </div>
 
@@ -153,7 +154,6 @@
     </button>
 
     <p class="auth-error" id="cuenta-error" role="alert"></p>
-    <p class="auth-ok" id="cuenta-ok" role="status"></p>
 
     <p class="auth-seccion">Dar de baja</p>
     <button type="button" class="auth-google auth-peligro" id="cuenta-eliminar">
@@ -205,7 +205,6 @@
     </label>
 
     <p class="auth-error" id="clave-error" role="alert"></p>
-    <p class="auth-ok" id="clave-ok" role="status"></p>
 
     <div class="auth-acciones">
       <button type="submit" class="primary" id="clave-guardar">Guardar</button>
@@ -244,7 +243,6 @@
     </label>
 
     <p class="auth-error" id="borrar-error" role="alert"></p>
-    <p class="auth-ok" id="borrar-ok" role="status"></p>
 
     <div class="auth-acciones">
       <button type="button" class="primary" id="borrar-cerrar">✕ Mejor no</button>
@@ -296,7 +294,6 @@
     </label>
 
     <p class="auth-error" id="auth-error" role="alert"></p>
-    <p class="auth-ok" id="auth-ok" role="status"></p>
 
     <div class="auth-acciones">
       <button type="submit" class="primary" id="auth-submit">Entrar</button>

@@ -3,7 +3,6 @@
 import { store, slotDe, scheduleSave } from './state.js';
 import { keyOf, recalc, cycleEstado, faltantes } from './rules.js';
 import { drawArrows } from './arrows.js';
-import { carrerasDe } from '../data/index.js';
 import { showTip, moveTip, hideTip } from './tooltip.js';
 
 export function renderAll(carrera) {
@@ -76,10 +75,6 @@ function textoTooltip(carrera, id, estado) {
     partes.push('Click → Regular · Click 2× → Aprobada');
   }
 
-  // Las materias compartidas valen para varias carreras a la vez.
-  const otras = carrerasDe(id).filter(t => t !== carrera.titulo);
-  if (otras.length) partes.push(`También cuenta para: ${otras.join(', ')}`);
-
   return partes.join('\n');
 }
 
@@ -93,7 +88,10 @@ function renderTramos(carrera) {
 
     const label = document.createElement('div');
     label.className = 'section-label';
-    label.innerHTML = tramo.label;
+
+    const titulo = document.createElement('div');
+    titulo.innerHTML = tramo.label;
+    label.append(titulo, botonDeTramo(carrera, tramo));
 
     const grid = document.createElement('div');
     grid.className = `section-subjects cols-${tramo.cols || 6}`;
@@ -102,6 +100,33 @@ function renderTramos(carrera) {
     row.append(label, grid);
     cont.appendChild(row);
   }
+}
+
+
+// ── Aprobar un tramo entero de una ───────────────────────────────────────────
+// El CBC y los tramos previos suelen venir ya hechos: marcarlos de a una es
+// tedioso. El botón aprueba todo el tramo, y si ya está todo aprobado hace lo
+// contrario, que es la forma de deshacer si se tocó por error.
+
+function botonDeTramo(carrera, tramo) {
+  const ids = tramo.ids.filter(id => carrera.materias[id]);
+  const todoAprobado = ids.length > 0 &&
+    ids.every(id => store.estados[keyOf(carrera, id)] === 'approved');
+
+  const b = document.createElement('button');
+  b.className = 'tramo-marcar';
+  b.textContent = todoAprobado ? 'Desmarcar' : 'Aprobar todo';
+  b.title = todoAprobado
+    ? `Volver a dejar pendiente todo ${tramo.label.replace(/<br>/g, ' ')}`
+    : `Marcar como aprobadas las ${ids.length} materias de este tramo`;
+
+  b.addEventListener('click', () => {
+    for (const id of ids) store.estados[keyOf(carrera, id)] = todoAprobado ? 'pending' : 'approved';
+    recalc(carrera, store.estados);
+    renderAll(carrera);
+    scheduleSave();
+  });
+  return b;
 }
 
 // ── Ciclo profesional + optativas ────────────────────────────────────────────

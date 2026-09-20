@@ -3,9 +3,9 @@ html, body { min-width:1300px; overflow-x:auto; }
 body { background:var(--bg); color:var(--text-main); font-family:'Syne',sans-serif; min-height:100vh; transition:background .3s,color .3s; }
 
 /* ── BARRA SUPERIOR ──────────────────────────────────────────────────────── */
-.topbar { position:fixed; top:12px; right:16px; left:16px; display:flex; align-items:center; justify-content:flex-end; gap:14px; z-index:100; pointer-events:none; }
+.topbar { position:fixed; top:12px; right:16px; left:16px; display:flex; align-items:center; justify-content:space-between; gap:14px; z-index:100; pointer-events:none; }
+.topbar-izq { display:flex; align-items:center; gap:8px; }
 .topbar > * { pointer-events:auto; }
-.usuario { font-family:'Space Mono',monospace; font-size:.58rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--text-sub); transition:color .3s; }
 .theme-switcher { display:flex; align-items:center; gap:6px; }
 .theme-swatch { width:22px; height:22px; border-radius:6px; cursor:pointer; border:2px solid transparent; transition:transform .15s,border-color .15s; flex-shrink:0; }
 .theme-swatch:hover { transform:scale(1.15); }
@@ -71,7 +71,7 @@ header p { font-family:'Space Mono',monospace; font-size:.7rem; letter-spacing:3
 
 /* ── FILAS DE TRAMO ──────────────────────────────────────────────────────── */
 .section-row { display:flex; align-items:stretch; border:1px solid var(--border); border-radius:14px; overflow:hidden; background:var(--surface); margin-bottom:10px; transition:background .3s,border-color .3s; }
-.section-label { width:130px; min-width:130px; display:flex; align-items:center; justify-content:center; padding:16px 10px; font-family:'Space Mono',monospace; font-size:.58rem; letter-spacing:2px; text-transform:uppercase; color:var(--accent); border-right:1px solid var(--border); text-align:center; line-height:1.7; transition:color .3s,border-color .3s; }
+.section-label { width:130px; min-width:130px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px 10px; font-family:'Space Mono',monospace; font-size:.58rem; letter-spacing:2px; text-transform:uppercase; color:var(--accent); border-right:1px solid var(--border); text-align:center; line-height:1.7; transition:color .3s,border-color .3s; }
 .section-subjects { flex:1; display:grid; gap:10px; padding:12px; }
 .section-subjects.cols-5 { grid-template-columns:repeat(5,1fr); }
 .section-subjects.cols-6 { grid-template-columns:repeat(6,1fr); }
@@ -210,10 +210,8 @@ header p { font-family:'Space Mono',monospace; font-size:.7rem; letter-spacing:3
 .auth-ojo:hover { color:var(--accent); background:var(--bg); }
 .auth-ojo:disabled { opacity:.4; cursor:default; }
 
-.auth-error, .auth-ok { font-family:'Syne',sans-serif; font-size:.82rem; line-height:1.5; }
-.auth-error { color:var(--accent); }
-.auth-error:empty, .auth-ok:empty { display:none; }
-.auth-ok { color:var(--approved-text); }
+.auth-error { font-family:'Syne',sans-serif; font-size:.82rem; line-height:1.5; color:var(--accent); }
+.auth-error:empty { display:none; }
 
 .auth-acciones { display:flex; gap:9px; }
 .auth-acciones button, .auth-volver { flex:1; display:flex; align-items:center; justify-content:center; background:var(--surface); border:1px solid var(--border); color:var(--text-main); border-radius:10px; padding:11px 15px; cursor:pointer; text-decoration:none; font-family:'Syne',sans-serif; font-weight:600; font-size:.85rem; transition:all .15s; }
@@ -243,3 +241,5 @@ header p { font-family:'Space Mono',monospace; font-size:.7rem; letter-spacing:3
 
 .boot-error { font-family:'Syne',sans-serif; font-size:.9rem; line-height:1.7; color:var(--text-main); text-align:center; max-width:440px; padding:0 20px; }
 body.sin-scroll { overflow:hidden; }
+.tramo-marcar { margin-top:8px; background:var(--surface); border:1px solid var(--border); color:var(--text-sub); border-radius:8px; padding:5px 9px; cursor:pointer; font-family:'Syne',sans-serif; font-weight:600; font-size:.68rem; letter-spacing:0; text-transform:none; transition:all .15s; }
+.tramo-marcar:hover { border-color:var(--accent); color:var(--accent); }
