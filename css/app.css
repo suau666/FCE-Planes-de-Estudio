@@ -249,3 +249,5 @@ body.sin-scroll { overflow:hidden; }
 .auth-fila { display:flex; gap:9px; }
 .auth-fila .auth-campo { flex:1; min-width:0; }
 .auth-sub:empty { display:none; }
+.auth-modal.ancho { width:min(520px,96vw); }
+.auth-modal.extra-ancho { width:min(660px,96vw); }

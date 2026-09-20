@@ -120,12 +120,14 @@
 
 <div id="invitar-overlay" class="auth-overlay" style="display:none">
   <div class="auth-modal">
-    <h2 id="invitar-titulo"></h2>
+    <div class="auth-cabecera">
+      <h2 id="invitar-titulo"></h2>
+      <button type="button" class="auth-x" id="invitar-cerrar"></button>
+    </div>
     <p class="auth-sub" id="invitar-texto"></p>
 
     <div class="auth-acciones">
       <button type="button" class="primary" id="invitar-crear">Crear cuenta</button>
-      <button type="button" id="invitar-cerrar">✕ Cerrar</button>
     </div>
 
     <button type="button" class="auth-google" id="invitar-google">Entrar con Google</button>
@@ -164,7 +166,6 @@
       <button type="button" class="primary" id="cuenta-cerrar">Cerrar</button>
     </div>
   </div>
-</div>
 </div>
 
 <div id="clave-overlay" class="auth-overlay" style="display:none">
@@ -266,11 +267,11 @@
     <div class="auth-fila auth-solo-registro" id="auth-nombre-campo">
       <label class="auth-campo">
         <span>Nombre</span>
-        <input type="text" id="auth-nombre" autocomplete="given-name" placeholder="Lautaro">
+        <input type="text" id="auth-nombre" autocomplete="given-name" placeholder="Nombre">
       </label>
       <label class="auth-campo">
         <span>Apellido</span>
-        <input type="text" id="auth-apellido" autocomplete="family-name" placeholder="Suau">
+        <input type="text" id="auth-apellido" autocomplete="family-name" placeholder="Apellido">
       </label>
     </div>
     <label class="auth-campo" id="auth-email-campo">

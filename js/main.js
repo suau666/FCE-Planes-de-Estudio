@@ -54,7 +54,7 @@ function initSelector() {
     b.dataset.carrera = c.id;
     b.textContent = c.titulo;
     if (!c.completo) b.classList.add('pendiente');
-    b.title = c.completo ? c.nombre : `${c.nombre} — plan pendiente de carga`;
+    b.title = c.completo ? c.nombre : `${c.nombre} · plan pendiente de carga`;
     b.addEventListener('click', () => irA(c.id));
     cont.appendChild(b);
   }
@@ -68,7 +68,7 @@ function irA(id) {
     .forEach(b => b.classList.toggle('active', b.dataset.carrera === carrera.id));
   document.getElementById('titulo').innerHTML =
     `${carrera.titulo} <span>·</span> Plan de Estudios`;
-  document.getElementById('subtitulo').textContent = `${carrera.nombre} — FCE · UBA`;
+  document.getElementById('subtitulo').textContent = `${carrera.nombre} · FCE · UBA`;
 
   const hayPlan = carrera.completo;
   document.getElementById('malla').style.display = hayPlan ? 'block' : 'none';
@@ -144,11 +144,6 @@ let chipsRegistro = null;
 function initChips() {
   chipsRegistro = montarChips($('auth-carreras'), CARRERAS, {
     max: MAX_CARRERAS,
-    min: 1,
-    alQuedarseCorto: () => {
-      $('auth-error').textContent =
-        'Elegí al menos una carrera. Si te equivocaste, tocá la correcta y esta se saca sola.';
-    },
     alPasarse: max => {
       $('auth-error').textContent =
         `${max} carreras como máximo. Sacá una si querés cambiarla.`;
@@ -176,6 +171,9 @@ function pintarModo() {
       `Te mandamos un código de 6 dígitos a ${mailAVerificar}. Ponelo acá para `
       + 'terminar de crear la cuenta.';
   }
+
+  $('auth-form').classList.toggle('ancho', modo === RECUPERAR);
+  $('auth-form').classList.toggle('extra-ancho', modo === REGISTRO);
 
   mostrar('.auth-solo-registro', modo === REGISTRO);
   mostrar('.auth-solo-clave', modo === ENTRAR || modo === REGISTRO);
@@ -538,16 +536,17 @@ function initCuentaUI() {
   // Cambiar de carrera se aplica al toque: no hay botón de guardar para esto.
   chipsCuenta = montarChips($('cuenta-carreras'), CARRERAS, {
     max: MAX_CARRERAS,
-    min: 1,
     alPasarse: max => {
       $('cuenta-error').textContent =
         `${max} carreras como máximo. Sacá una si querés cambiarla.`;
     },
-    alQuedarseCorto: () => {
-      $('cuenta-error').textContent =
-        'Tenés que estudiar al menos una carrera. Elegí la otra y esta se saca sola.';
-    },
     alCambiar: elegidas => {
+      // Se puede desmarcar, pero una cuenta sin carrera no se guarda: hasta
+      // que elija alguna, queda lo que ya estaba en la base.
+      if (!elegidas.length) {
+        $('cuenta-error').textContent = 'Elegí al menos una carrera.';
+        return;
+      }
       $('cuenta-error').textContent = '';
       store.carreras = elegidas;
       if (elegidas[0] && elegidas[0] !== store.carreraActiva) irA(elegidas[0]);
@@ -656,16 +655,15 @@ function initCuentaUI() {
 
 const INVITACIONES = {
   progreso: {
-    titulo: 'Guardá tu progreso <span>·</span> Es gratis',
+    titulo: 'Guardá tu progreso',
     texto: 'Lo que marcás no queda guardado: si cerrás o recargás la página se '
       + 'pierde. Con una cuenta tu progreso te sigue a cualquier dispositivo, y '
       + 'las materias que compartís entre carreras se cuentan solas.',
   },
   planificador: {
-    titulo: 'Planificador <span>·</span> Sólo con cuenta',
-    texto: 'Armar los cuatrimestres es para quienes tienen cuenta: el plan se '
-      + 'guarda ahí, no en este dispositivo. Creala y lo tenés siempre, con tu '
-      + 'progreso al día.',
+    titulo: 'Planificador',
+    texto: 'Armar los cuatrimestres es para quienes tienen cuenta. Creala y lo '
+      + 'tenés siempre, con tu progreso al día.',
   },
 };
 
@@ -709,6 +707,9 @@ function initInvitacion() {
   // Al marcar la primera materia sin cuenta.
   onSinCuenta(() => invitar('progreso'));
 
+  $('invitar-cerrar').innerHTML = EQUIS;
+  $('invitar-cerrar').title = 'Cerrar';
+  $('invitar-cerrar').setAttribute('aria-label', 'Cerrar');
   $('invitar-cerrar').addEventListener('click', () => cerrarInvitacion());
   $('invitar-overlay').addEventListener('click', e => {
     if (e.target === $('invitar-overlay')) cerrarInvitacion();

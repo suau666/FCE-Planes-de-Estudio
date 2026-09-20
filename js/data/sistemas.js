@@ -9,7 +9,7 @@
 
 export default {
   id: 'sistemas',
-  nombre: 'Sistemas de Información de las Organizaciones',
+  nombre: 'Licenciatura en Sistemas de Información de las Organizaciones',
   titulo: 'Sistemas',
   completo: true,
 
