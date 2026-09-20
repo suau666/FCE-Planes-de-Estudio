@@ -11,6 +11,7 @@ import {
 } from './auth/session.js';
 import { PAGINA_RESET } from './auth/reset-url.js';
 import { initOjos, ocultarOjos } from './auth/ojo.js';
+import { montarChips } from './core/chips.js';
 import { hayNeon } from './config.js';
 
 let carrera = null;
@@ -90,7 +91,6 @@ const ENTRAR = 'entrar', REGISTRO = 'registro';
 const RECUPERAR = 'recuperar', VERIFICAR = 'verificar';
 let modo = ENTRAR;
 let mailAVerificar = '';
-let carrerasElegidas = [];   // al crear cuenta: una, o dos como máximo
 
 const $ = id => document.getElementById(id);
 
@@ -140,40 +140,17 @@ const TEXTOS = {
 // Los chips de "¿qué estudiás?". La primera elegida es la principal: es la que
 // se abre al entrar, y la que cuenta en las estadísticas de la carrera.
 const MAX_CARRERAS = 2;
-
-function pintarChips() {
-  for (const chip of document.querySelectorAll('#auth-carreras .auth-chip')) {
-    const puesto = carrerasElegidas.indexOf(chip.dataset.carrera);
-    chip.classList.toggle('elegida', puesto >= 0);
-    chip.title = puesto === 0 ? 'Tu carrera principal: es la que se abre al entrar'
-      : puesto > 0 ? 'Tu segunda carrera'
-      : 'Tocá para elegirla';
-  }
-}
+let chipsRegistro = null;
 
 function initChips() {
-  const cont = $('auth-carreras');
-  for (const c of CARRERAS) {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'auth-chip';
-    chip.dataset.carrera = c.id;
-    chip.textContent = c.titulo;
-    chip.addEventListener('click', () => {
-      const i = carrerasElegidas.indexOf(c.id);
-      if (i >= 0) carrerasElegidas.splice(i, 1);
-      else if (carrerasElegidas.length < MAX_CARRERAS) carrerasElegidas.push(c.id);
-      else {
-        $('auth-error').textContent =
-          'Dos carreras como máximo. Sacá una si querés cambiarla.';
-        return;
-      }
-      $('auth-error').textContent = '';
-      pintarChips();
-    });
-    cont.appendChild(chip);
-  }
-  pintarChips();
+  chipsRegistro = montarChips($('auth-carreras'), CARRERAS, {
+    max: MAX_CARRERAS,
+    alPasarse: max => {
+      $('auth-error').textContent =
+        `${max} carreras como máximo. Sacá una si querés cambiarla.`;
+    },
+    alCambiar: () => { $('auth-error').textContent = ''; },
+  });
 }
 
 function mostrar(selector, si) {
@@ -223,15 +200,14 @@ function revisarDatos({ email, password, password2, codigo }) {
   if (modo === REGISTRO) {
     if (!password2) return 'Repetí la contraseña para confirmarla.';
     if (password !== password2) return 'Las dos contraseñas no son iguales.';
-    if (!carrerasElegidas.length) return 'Elegí qué carrera estudiás.';
+    if (!chipsRegistro.valor().length) return 'Elegí qué carrera estudiás.';
   }
   return null;
 }
 
 function abrirModal(enModo = ENTRAR) {
   modo = enModo;
-  carrerasElegidas = [...(store.carreras || [])];
-  pintarChips();
+  chipsRegistro.poner(store.carreras);
   ocultarOjos($('auth-form'));
   pintarModo();
   $('auth-overlay').style.display = 'flex';
@@ -348,8 +324,8 @@ function initAuthUI() {
         // Lo que eligió viaja con el resto del progreso: `cargar()` sube todo
         // junto cuando la cuenta queda abierta.
         if (modo === REGISTRO) {
-          store.carreras = [...carrerasElegidas];
-          store.carreraActiva = carrerasElegidas[0] || store.carreraActiva;
+          store.carreras = chipsRegistro.valor();
+          store.carreraActiva = store.carreras[0] || store.carreraActiva;
         }
         const r = await (modo === REGISTRO ? signUp(datos) : signIn(datos));
         // Neon quedó esperando el código del mail: no hay sesión todavía.
@@ -377,10 +353,13 @@ function initAuthUI() {
 // saber la anterior no se puede desde el navegador: Better Auth sólo expone
 // `set-password` del lado del servidor, y esta app no tiene servidor propio.
 
+let chipsCuenta = null;
+
 function abrirCuenta() {
   const user = getUser();
   if (!user) return;
   $('cuenta-mail').textContent = user.email || '';
+  chipsCuenta.poner(store.carreras);
   $('cuenta-form').reset();
   ocultarOjos($('cuenta-form'));
   $('cuenta-error').textContent = '';
@@ -405,6 +384,24 @@ function revisarCambio(actual, nueva, nueva2) {
 
 function initCuentaUI() {
   initOjos($('cuenta-form'));
+
+  // Cambiar de carrera se aplica al toque: no hay botón de guardar para esto.
+  chipsCuenta = montarChips($('cuenta-carreras'), CARRERAS, {
+    max: MAX_CARRERAS,
+    alPasarse: max => {
+      $('cuenta-error').textContent =
+        `${max} carreras como máximo. Sacá una si querés cambiarla.`;
+    },
+    alCambiar: elegidas => {
+      $('cuenta-error').textContent = '';
+      store.carreras = elegidas;
+      if (elegidas[0] && elegidas[0] !== store.carreraActiva) irA(elegidas[0]);
+      else scheduleSave();
+      $('cuenta-ok').textContent = elegidas.length
+        ? 'Listo, guardamos tu carrera.'
+        : 'Te quedaste sin carrera elegida: elegí al menos una.';
+    },
+  });
 
   $('cuenta-btn').addEventListener('click', abrirCuenta);
   $('cuenta-cerrar').addEventListener('click', cerrarCuenta);
