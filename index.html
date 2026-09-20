@@ -115,6 +115,25 @@
 </div>
 <div class="planner-toast" id="planner-toast"></div>
 
+<div id="invitar-overlay" class="auth-overlay" style="display:none">
+  <div class="auth-modal">
+    <h2 id="invitar-titulo"></h2>
+    <p class="auth-sub" id="invitar-texto"></p>
+
+    <div class="auth-acciones">
+      <button type="button" class="primary" id="invitar-crear">Crear cuenta</button>
+      <button type="button" id="invitar-cerrar">✕ Cerrar</button>
+    </div>
+
+    <button type="button" class="auth-google" id="invitar-google">Entrar con Google</button>
+
+    <p class="auth-cambiar">
+      <span>¿Ya tenés cuenta?</span>
+      <button type="button" id="invitar-entrar">Entrar</button>
+    </p>
+  </div>
+</div>
+
 <div id="cuenta-overlay" class="auth-overlay" style="display:none">
   <form class="auth-modal" id="cuenta-form" novalidate>
     <h2>Mi cuenta <span>·</span> <span id="cuenta-mail"></span></h2>

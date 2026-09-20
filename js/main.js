@@ -1,5 +1,5 @@
 import { CARRERAS, getCarrera } from './data/index.js';
-import { store, cargar, scheduleSave, indicador } from './core/state.js';
+import { store, cargar, scheduleSave, indicador, onSinCuenta } from './core/state.js';
 import { initEstados } from './core/rules.js';
 import { renderAll } from './core/render.js';
 import { drawArrows } from './core/arrows.js';
@@ -458,6 +458,91 @@ function initCuentaUI() {
   });
 }
 
+// ── Invitación a tener cuenta ────────────────────────────────────────────────
+// Dos momentos, un solo modal. Al marcar la primera materia se avisa que sin
+// cuenta no se guarda nada; si lo cierran, no se insiste más en toda la
+// visita. El planificador es aparte: ahí la cuenta no es un consejo, es el
+// requisito, así que se muestra siempre.
+
+const INVITACIONES = {
+  progreso: {
+    titulo: 'Guardá tu progreso <span>·</span> Es gratis',
+    texto: 'Lo que marcás no queda guardado: si cerrás o recargás la página se '
+      + 'pierde. Con una cuenta tu progreso te sigue a cualquier dispositivo, y '
+      + 'las materias que compartís entre carreras se cuentan solas.',
+  },
+  planificador: {
+    titulo: 'Planificador <span>·</span> Sólo con cuenta',
+    texto: 'Armar los cuatrimestres es para quienes tienen cuenta: el plan se '
+      + 'guarda ahí, no en este dispositivo. Creala y lo tenés siempre, con tu '
+      + 'progreso al día.',
+  },
+};
+
+// Que no vuelva a aparecer si ya la cerraron. Dura lo que dura la pestaña:
+// no se guarda nada en el navegador.
+const YA_LA_VIO = 'fce_invitacion_cerrada';
+
+function yaCerroLaInvitacion() {
+  try {
+    return sessionStorage.getItem(YA_LA_VIO) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function recordarQueLaCerro() {
+  try {
+    sessionStorage.setItem(YA_LA_VIO, '1');
+  } catch {
+    // Modo incógnito con el almacenamiento bloqueado: paciencia, se vuelve a
+    // mostrar en la próxima visita.
+  }
+}
+
+function invitar(tipo) {
+  if (getUser()) return;
+  if (tipo === 'progreso' && yaCerroLaInvitacion()) return;
+
+  const t = INVITACIONES[tipo];
+  $('invitar-titulo').innerHTML = t.titulo;
+  $('invitar-texto').textContent = t.texto;
+  $('invitar-overlay').style.display = 'flex';
+}
+
+function cerrarInvitacion({ recordar = true } = {}) {
+  $('invitar-overlay').style.display = 'none';
+  if (recordar) recordarQueLaCerro();
+}
+
+function initInvitacion() {
+  // Al marcar la primera materia sin cuenta.
+  onSinCuenta(() => invitar('progreso'));
+
+  $('invitar-cerrar').addEventListener('click', () => cerrarInvitacion());
+  $('invitar-overlay').addEventListener('click', e => {
+    if (e.target === $('invitar-overlay')) cerrarInvitacion();
+  });
+
+  $('invitar-crear').addEventListener('click', () => {
+    cerrarInvitacion({ recordar: false });
+    abrirModal(REGISTRO);
+  });
+  $('invitar-entrar').addEventListener('click', () => {
+    cerrarInvitacion({ recordar: false });
+    abrirModal(ENTRAR);
+  });
+  $('invitar-google').addEventListener('click', async () => {
+    try {
+      await signInConGoogle();
+    } catch (err) {
+      cerrarInvitacion({ recordar: false });
+      abrirModal(ENTRAR);
+      $('auth-error').textContent = mensajeDeError(err);
+    }
+  });
+}
+
 // ── Boot ─────────────────────────────────────────────────────────────────────
 async function boot() {
   initTemas();
@@ -470,17 +555,12 @@ async function boot() {
   aplicarTema(store.tema);
   initAuthUI();
   initCuentaUI();
+  initInvitacion();
   document.getElementById('planner-btn')
     .addEventListener('click', () => {
       // El planificador arma un plan para varios cuatrimestres: sin cuenta se
       // perdería al recargar, así que pide entrar antes.
-      if (!getUser()) {
-        abrirModal(ENTRAR);
-        $('auth-error').textContent =
-          'Para planificar tus cuatrimestres necesitás una cuenta: el plan se '
-          + 'guarda ahí, no en este dispositivo.';
-        return;
-      }
+      if (!getUser()) return invitar('planificador');
       openPlanner(carrera);
     });
 

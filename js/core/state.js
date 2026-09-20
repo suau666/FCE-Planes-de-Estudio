@@ -80,30 +80,26 @@ export function scheduleSave() {
   timer = setTimeout(guardar, 800);
 }
 
-// Sin cuenta no hay nada que guardar, pero callarse sería peor: la persona
-// tiene que enterarse ANTES de irse de que lo que marcó no va a estar cuando
-// vuelva. El primer aviso es largo; los siguientes, cortos.
-let avisosSinCuenta = 0;
+// Sin cuenta no hay nada que guardar. En vez de un cartel cada vez, se avisa
+// una sola vez con un modal: lo hace main.js, que es quien lo sabe mostrar.
+const oyentesSinCuenta = new Set();
+
+export function onSinCuenta(fn) {
+  oyentesSinCuenta.add(fn);
+  return () => oyentesSinCuenta.delete(fn);
+}
 
 async function guardar() {
   if (!getUser()) {
-    // Al abrir la app y al cambiar de carrera también se guarda: sin nada
-    // marcado no hay nada que avisar.
-    if (!hayProgreso()) return;
-    const primero = avisosSinCuenta++ === 0;
-    indicador(
-      primero ? 'Sin cuenta esto no se guarda — creá una para no perderlo'
-              : 'No se guarda sin cuenta',
-      'error', primero ? 6000 : 2200);
+    if (hayProgreso()) oyentesSinCuenta.forEach(fn => fn());
     return;
   }
   try {
+    // Guardar bien no se anuncia: es lo que tiene que pasar siempre. El
+    // cartelito queda sólo para cuando algo falla.
     await adapterPara(getUser()).save(store);
-    indicador('✓ Guardado', 'saved', 1800);
   } catch (e) {
     console.error('Error al guardar:', e);
-    // El motivo importa: no es lo mismo quedarse sin internet que perder la
-    // sesión. Se muestra más tiempo porque hay algo para leer y decidir.
     indicador(`✗ ${mensajeDeError(e)}`, 'error', 6000);
   }
 }
