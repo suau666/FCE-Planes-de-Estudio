@@ -77,6 +77,15 @@ create table if not exists progreso_optativas (
   primary key (usuario_id, carrera_id, slot)
 );
 
+-- El planificador de cuatrimestres: un renglón por carrera, con el mapa
+-- materia → período ("2026-2C"). No entra en las estadísticas, es del usuario.
+create table if not exists progreso_plan (
+  usuario_id uuid not null references perfiles(id) on delete cascade,
+  carrera_id text not null references carreras(id) on delete cascade,
+  plan       jsonb not null default '{}'::jsonb,
+  primary key (usuario_id, carrera_id)
+);
+
 create index if not exists progreso_codigo_idx on progreso (codigo);
 create index if not exists perfiles_carrera_idx on perfiles (carrera_id);
 
@@ -86,6 +95,7 @@ create index if not exists perfiles_carrera_idx on perfiles (carrera_id);
 alter table perfiles           enable row level security;
 alter table progreso           enable row level security;
 alter table progreso_optativas enable row level security;
+alter table progreso_plan       enable row level security;
 
 create policy "cada uno su perfil" on perfiles
   for all to authenticated
@@ -96,6 +106,10 @@ create policy "cada uno su progreso" on progreso
   using (auth.user_id() = usuario_id::text) with check (auth.user_id() = usuario_id::text);
 
 create policy "cada uno sus optativas" on progreso_optativas
+  for all to authenticated
+  using (auth.user_id() = usuario_id::text) with check (auth.user_id() = usuario_id::text);
+
+create policy "cada uno su plan" on progreso_plan
   for all to authenticated
   using (auth.user_id() = usuario_id::text) with check (auth.user_id() = usuario_id::text);
 
@@ -114,7 +128,8 @@ create policy "catálogo público" on correlativas     for select using (true);
 grant usage on schema public to anonymous, authenticated;
 grant select on carreras, materias, carrera_materias, correlativas
   to anonymous, authenticated;
-grant select, insert, update, delete on perfiles, progreso, progreso_optativas
+grant select, insert, update, delete
+  on perfiles, progreso, progreso_optativas, progreso_plan
   to authenticated;
 
 -- ── Estadísticas ────────────────────────────────────────────────────────────

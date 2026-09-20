@@ -1,21 +1,16 @@
 // Elige dónde se guarda el progreso y migra los datos de las apps viejas.
 //
-// Hoy siempre es localStorage. Cuando entre el login real, `adapterPara(user)`
-// devuelve el adapter remoto para usuarios con sesión y el local para anónimos;
-// el resto de la app no se entera.
+// Con sesión abierta el progreso va a Neon; sin sesión, a este dispositivo.
+// El resto de la app no se entera: los dos adapters tienen `load()` y `save()`.
 
 import local from './local.js';
+import remoto from './remote.js';
+import { DOC_VACIO } from './doc.js';
 
-export const DOC_VACIO = {
-  version: 1,
-  tema: 'dark',
-  carreraActiva: 'actuario',
-  estados: {},      // código global o "carrera:optN" → estado
-  porCarrera: {},   // id de carrera → { optNames, plan }
-};
+export { DOC_VACIO, local, remoto };
 
-export function adapterPara(/* user */) {
-  return local;
+export function adapterPara(user) {
+  return user ? remoto : local;
 }
 
 // ── Migración de las apps separadas ──────────────────────────────────────────

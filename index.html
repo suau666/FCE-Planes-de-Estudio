@@ -19,6 +19,7 @@
 
 <div class="topbar">
   <span class="usuario" id="usuario"></span>
+  <button class="auth-btn" id="auth-btn">Entrar</button>
   <div class="theme-switcher" id="theme-switcher"></div>
 </div>
 
@@ -112,6 +113,43 @@
   </div>
 </div>
 <div class="planner-toast" id="planner-toast"></div>
+
+<div id="auth-overlay" class="auth-overlay" style="display:none">
+  <form class="auth-modal" id="auth-form">
+    <h2 id="auth-titulo">Entrar <span>·</span> Mi progreso</h2>
+    <p class="auth-sub" id="auth-sub">
+      Con una cuenta, el progreso te sigue a cualquier dispositivo.
+    </p>
+
+    <label class="auth-campo auth-solo-registro" id="auth-nombre-campo">
+      <span>Nombre</span>
+      <input type="text" id="auth-nombre" autocomplete="name" placeholder="Cómo te llamás">
+    </label>
+    <label class="auth-campo">
+      <span>Mail</span>
+      <input type="email" id="auth-email" autocomplete="email" required placeholder="vos@ejemplo.com">
+    </label>
+    <label class="auth-campo">
+      <span>Contraseña</span>
+      <input type="password" id="auth-password" autocomplete="current-password" required
+             minlength="8" placeholder="Al menos 8 caracteres">
+    </label>
+
+    <p class="auth-error" id="auth-error"></p>
+
+    <div class="auth-acciones">
+      <button type="submit" class="primary" id="auth-submit">Entrar</button>
+      <button type="button" id="auth-cerrar">✕ Cerrar</button>
+    </div>
+
+    <button type="button" class="auth-google" id="auth-google">Entrar con Google</button>
+
+    <p class="auth-cambiar">
+      <span id="auth-cambiar-texto">¿Todavía no tenés cuenta?</span>
+      <button type="button" id="auth-cambiar">Crear una</button>
+    </p>
+  </form>
+</div>
 
 <script type="module" src="js/main.js"></script>
 </body>

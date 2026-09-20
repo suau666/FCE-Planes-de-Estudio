@@ -1,6 +1,6 @@
 // Estado de la app y su persistencia.
 
-import { adapterPara, DOC_VACIO, migrarDesdeAppsViejas } from '../storage/index.js';
+import { adapterPara, local, DOC_VACIO, migrarDesdeAppsViejas } from '../storage/index.js';
 import { getUser } from '../auth/session.js';
 
 export const store = structuredClone(DOC_VACIO);
@@ -10,22 +10,34 @@ export function slotDe(carreraId) {
   return store.porCarrera[carreraId] ??= { optNames: {}, plan: {} };
 }
 
+// Deja `store` con el contenido de `doc` y nada de lo anterior: al entrar o
+// salir de una cuenta el progreso tiene que cambiar entero, no mezclarse.
+function reemplazar(doc) {
+  for (const k of Object.keys(store)) delete store[k];
+  Object.assign(store, structuredClone(DOC_VACIO), doc);
+}
+
+// Trae el progreso del adapter que corresponda a la sesión actual.
+//   migrado → vino de las apps separadas de Actuario y Sistemas
+//   subido  → cuenta nueva: se llevó lo que había en este dispositivo
 export async function cargar() {
-  const adapter = adapterPara(getUser());
+  const user = getUser();
+  const adapter = adapterPara(user);
   let doc = await adapter.load();
+  let migrado = false;
+  let subido = false;
 
   if (!doc) {
-    doc = migrarDesdeAppsViejas();
-    if (doc) {
-      Object.assign(store, doc);
-      await adapter.save(store);   // fija la migración para no repetirla
-      return { migrado: true };
-    }
-    return { migrado: false };
+    // Cuenta recién creada: se lleva lo de este dispositivo, si hay algo.
+    if (user) doc = await local.load();
+    if (!doc) { doc = migrarDesdeAppsViejas(); migrado = Boolean(doc); }
+    subido = Boolean(user && doc);
   }
 
-  Object.assign(store, doc);
-  return { migrado: false };
+  reemplazar(doc || {});
+  // Fija la migración o la subida para no repetirlas.
+  if (migrado || subido) await adapter.save(store);
+  return { migrado, subido };
 }
 
 // ── Guardado con debounce ────────────────────────────────────────────────────
