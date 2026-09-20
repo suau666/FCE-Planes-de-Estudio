@@ -229,3 +229,6 @@ header p { font-family:'Space Mono',monospace; font-size:.7rem; letter-spacing:3
 .auth-chip-orden:empty { display:none; }
 .auth-chip-orden { font-size:.46rem; letter-spacing:1px; padding:2px 5px; border-radius:5px; background:var(--accent); color:var(--bg); }
 body.sin-scroll { overflow:hidden; }
+.auth-overlay { overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+.auth-peligro { border-color:var(--regular-border) !important; color:var(--regular-text) !important; }
+.auth-peligro:hover { background:var(--regular-bg) !important; }

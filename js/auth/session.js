@@ -286,6 +286,30 @@ export async function vincularGoogle() {
   }));
 }
 
+// Poner una contraseña sin saber la anterior: Neon manda un código de 6
+// dígitos y se completa en la misma pantalla. Es el camino para quien entró
+// con Google, y también para el que se la olvidó estando adentro.
+export async function mandarCodigoDeContrasena(email) {
+  const client = await getClient();
+  await pedir(() => client.auth.emailOtp.sendVerificationOtp({
+    email, type: 'forget-password',
+  }));
+}
+
+export async function ponerContrasenaConCodigo(email, codigo, password) {
+  const client = await getClient();
+  await pedir(() => client.auth.emailOtp.resetPassword({
+    email, otp: codigo, password,
+  }));
+}
+
+// Borra la cuenta y, en cascada, todo lo que cuelga de ella en la base.
+export async function eliminarCuenta() {
+  const client = await getClient();
+  await pedir(() => client.auth.deleteUser({}));
+  adoptar(null);
+}
+
 export async function signOut() {
   if (hayNeon) {
     try {

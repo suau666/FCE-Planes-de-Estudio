@@ -7,7 +7,7 @@ import { openPlanner, initPlannerUI } from './core/planner.js';
 import {
   initSesion, signIn, signUp, signInConGoogle, signOut, pedirResetDeContrasena,
   cambiarContrasenaConLaActual, vincularGoogle, mandarCodigo, verificarCodigo,
-  formasDeEntrar,
+  formasDeEntrar, mandarCodigoDeContrasena, ponerContrasenaConCodigo, eliminarCuenta,
   errorDeRedireccion, getUser, nombreVisible, mensajeDeError,
 } from './auth/session.js';
 import { PAGINA_RESET } from './auth/reset-url.js';
@@ -400,15 +400,59 @@ function cerrarCuenta() {
   cerrarOverlay($('cuenta-overlay'));
 }
 
-// ── Cambiar la contraseña, en su propio modal ────────────────────────────────
+// ── Contraseña, en su propio modal ───────────────────────────────────────────
+// Dos caminos en la misma pantalla. Si sabe la actual, se cambia al toque. Si
+// no —porque entró con Google, o porque se la olvidó—, Neon manda un código de
+// 6 dígitos y se completa acá mismo, sin ir a buscar ningún link.
 
-function abrirClave() {
-  $('clave-form').reset();
-  ocultarOjos($('clave-form'));
+const CON_ACTUAL = 'actual', CON_CODIGO = 'codigo';
+let modoClave = CON_ACTUAL;
+
+function pintarModoClave() {
+  const conCodigo = modoClave === CON_CODIGO;
+  const mail = getUser()?.email || 'tu mail';
+
+  $('clave-titulo').innerHTML = conCodigo
+    ? 'Tu contraseña <span>·</span> Con un código'
+    : 'Cambiar <span>·</span> Mi contraseña';
+  $('clave-sub').textContent = conCodigo
+    ? `Te mandamos un código de 6 dígitos a ${mail}. Ponelo acá junto con la contraseña que quieras.`
+    : 'Para cambiarla hay que saber la de ahora.';
+
+  $('clave-actual-campo').style.display = conCodigo ? 'none' : '';
+  $('clave-codigo-campo').style.display = conCodigo ? '' : 'none';
+  $('clave-cambiar-texto').textContent = conCodigo
+    ? '¿No te llegó?' : '¿No te acordás la actual?';
+  $('clave-cambiar').textContent = conCodigo
+    ? 'Mandalo de nuevo' : 'Mandame un código';
+
   $('clave-error').textContent = '';
   $('clave-ok').textContent = '';
+}
+
+async function pedirCodigoDeClave() {
+  const user = getUser();
+  if (!user?.email) return;
+  try {
+    await mandarCodigoDeContrasena(user.email);
+    modoClave = CON_CODIGO;
+    pintarModoClave();
+    $('clave-ok').textContent = `Código mandado a ${user.email}.`;
+    $('clave-codigo').focus();
+  } catch (err) {
+    $('clave-error').textContent = mensajeDeError(err);
+  }
+}
+
+async function abrirClave(conCodigo = false) {
+  $('clave-form').reset();
+  ocultarOjos($('clave-form'));
+  modoClave = CON_ACTUAL;
+  pintarModoClave();
   abrirOverlay($('clave-overlay'));
-  $('cuenta-actual').focus();
+
+  if (conCodigo) await pedirCodigoDeClave();
+  else $('cuenta-actual').focus();
 }
 
 function cerrarClave() {
@@ -416,27 +460,45 @@ function cerrarClave() {
   $('clave-form').reset();
 }
 
-function revisarCambio(actual, nueva, nueva2) {
-  if (!actual) return 'Escribí tu contraseña actual.';
+function revisarCambio({ actual, codigo, nueva, nueva2 }) {
+  if (modoClave === CON_CODIGO) {
+    if (!codigo) return 'Escribí el código que te llegó por mail.';
+    if (!/^\d{6}$/.test(codigo)) return 'El código son 6 dígitos.';
+  } else if (!actual) {
+    return 'Escribí tu contraseña actual.';
+  }
   if (!nueva) return 'Escribí la contraseña nueva.';
   if (nueva.length < 8) return 'La contraseña nueva necesita al menos 8 caracteres.';
   if (nueva !== nueva2) return 'Las dos contraseñas nuevas no son iguales.';
-  if (nueva === actual) return 'La contraseña nueva es igual a la de ahora.';
+  if (modoClave === CON_ACTUAL && nueva === actual) {
+    return 'La contraseña nueva es igual a la de ahora.';
+  }
   return null;
 }
 
-async function mandarMailDeContrasena() {
-  const user = getUser();
-  if (!user?.email) return;
-  $('cuenta-error').textContent = '';
-  $('cuenta-ok').textContent = '';
+// ── Eliminar la cuenta ───────────────────────────────────────────────────────
+
+function abrirBorrar() {
+  $('borrar-form').reset();
+  $('borrar-error').textContent = '';
+  $('borrar-ok').textContent = '';
+  abrirOverlay($('borrar-overlay'));
+  $('borrar-palabra').focus();
+}
+
+function cerrarBorrar() {
+  cerrarOverlay($('borrar-overlay'));
+  $('borrar-form').reset();
+}
+
+async function salirDeLaCuenta() {
   try {
-    await pedirResetDeContrasena(user.email, PAGINA_RESET);
-    $('cuenta-ok').textContent =
-      `Te mandamos un mail a ${user.email} con el link para elegir la contraseña.`;
+    await signOut();
   } catch (err) {
-    $('cuenta-error').textContent = mensajeDeError(err);
+    indicador(`✗ ${mensajeDeError(err)}`, 'error', 6000);
   }
+  cerrarCuenta();
+  await recargarProgreso();
 }
 
 function initCuentaUI() {
@@ -466,11 +528,44 @@ function initCuentaUI() {
     if (e.target === $('cuenta-overlay')) cerrarCuenta();
   });
 
-  // Con contraseña, el modal para cambiarla. Sin contraseña, el mail para
-  // crearla: `set-password` no existe para el navegador.
+  // Con contraseña, se pide la actual. Sin contraseña, arranca directo por el
+  // código: `set-password` no existe para el navegador, pero el código sí.
   $('cuenta-clave-btn').addEventListener('click', () => {
-    if ($('cuenta-clave-btn').dataset.tiene === 'si') abrirClave();
-    else mandarMailDeContrasena();
+    cerrarCuenta();
+    abrirClave($('cuenta-clave-btn').dataset.tiene !== 'si');
+  });
+
+  $('cuenta-salir').addEventListener('click', salirDeLaCuenta);
+  $('cuenta-eliminar').addEventListener('click', () => {
+    cerrarCuenta();
+    abrirBorrar();
+  });
+
+  $('clave-cambiar').addEventListener('click', pedirCodigoDeClave);
+
+  $('borrar-cerrar').addEventListener('click', cerrarBorrar);
+  $('borrar-overlay').addEventListener('click', e => {
+    if (e.target === $('borrar-overlay')) cerrarBorrar();
+  });
+
+  $('borrar-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    if ($('borrar-palabra').value.trim().toUpperCase() !== 'ELIMINAR') {
+      $('borrar-error').textContent = 'Escribí ELIMINAR para confirmar.';
+      return;
+    }
+    $('borrar-confirmar').disabled = true;
+    $('borrar-error').textContent = '';
+    try {
+      await eliminarCuenta();
+      $('borrar-ok').textContent = 'Cuenta eliminada.';
+      cerrarBorrar();
+      await recargarProgreso();
+    } catch (err) {
+      $('borrar-error').textContent = mensajeDeError(err);
+    } finally {
+      $('borrar-confirmar').disabled = false;
+    }
   });
 
   $('cuenta-vincular').addEventListener('click', async () => {
@@ -489,20 +584,28 @@ function initCuentaUI() {
 
   $('clave-form').addEventListener('submit', async e => {
     e.preventDefault();
-    const actual = $('cuenta-actual').value;
-    const nueva = $('cuenta-nueva').value;
-    const nueva2 = $('cuenta-nueva2').value;
+    const datos = {
+      actual: $('cuenta-actual').value,
+      codigo: $('clave-codigo').value.trim(),
+      nueva: $('cuenta-nueva').value,
+      nueva2: $('cuenta-nueva2').value,
+    };
 
-    const problema = revisarCambio(actual, nueva, nueva2);
+    const problema = revisarCambio(datos);
     if (problema) { $('clave-error').textContent = problema; return; }
 
     $('clave-guardar').disabled = true;
     $('clave-error').textContent = '';
+    $('clave-ok').textContent = '';
     try {
-      await cambiarContrasenaConLaActual(actual, nueva);
+      if (modoClave === CON_CODIGO) {
+        await ponerContrasenaConCodigo(getUser().email, datos.codigo, datos.nueva);
+      } else {
+        await cambiarContrasenaConLaActual(datos.actual, datos.nueva);
+      }
       $('clave-form').reset();
       ocultarOjos($('clave-form'));
-      $('clave-ok').textContent = 'Listo, ya tenés contraseña nueva.';
+      $('clave-ok').textContent = 'Listo, ya podés entrar con la contraseña nueva.';
     } catch (err) {
       $('clave-error').textContent = mensajeDeError(err);
     } finally {

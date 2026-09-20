@@ -137,13 +137,8 @@
 <div id="cuenta-overlay" class="auth-overlay" style="display:none">
   <div class="auth-modal">
     <h2>Mi cuenta <span>·</span> <span id="cuenta-mail"></span></h2>
-    <p class="auth-sub">
-      Tu carrera y cómo entrás. El progreso se guarda solo, no hace falta tocar
-      nada acá.
-    </p>
-
     <div class="auth-campo" id="cuenta-carreras-campo">
-      <span>¿Qué estudiás? <em>La primera es la principal</em></span>
+      <span>¿Qué estudiás?</span>
       <div class="auth-chips" id="cuenta-carreras"></div>
     </div>
 
@@ -160,19 +155,22 @@
 
     <div class="auth-acciones">
       <button type="button" class="primary" id="cuenta-cerrar">✕ Cerrar</button>
+      <button type="button" id="cuenta-salir">Cerrar sesión</button>
     </div>
+
+    <p class="auth-seccion">Dar de baja</p>
+    <button type="button" class="auth-google auth-peligro" id="cuenta-eliminar">
+      Eliminar mi cuenta
+    </button>
   </div>
 </div>
 
 <div id="clave-overlay" class="auth-overlay" style="display:none">
   <form class="auth-modal" id="clave-form" novalidate>
-    <h2>Cambiar <span>·</span> Mi contraseña</h2>
-    <p class="auth-sub">
-      Para cambiarla hay que saber la de ahora. Si no la tenés, cerrá esto y
-      pedí el mail para crear una.
-    </p>
+    <h2 id="clave-titulo">Cambiar <span>·</span> Mi contraseña</h2>
+    <p class="auth-sub" id="clave-sub"></p>
 
-    <label class="auth-campo">
+    <label class="auth-campo" id="clave-actual-campo">
       <span>Contraseña actual</span>
       <div class="auth-input-ojo">
         <input type="password" id="cuenta-actual" autocomplete="current-password"
@@ -180,6 +178,13 @@
         <button type="button" class="auth-ojo"></button>
       </div>
     </label>
+
+    <label class="auth-campo" id="clave-codigo-campo" style="display:none">
+      <span>Código del mail</span>
+      <input type="text" id="clave-codigo" inputmode="numeric" autocomplete="one-time-code"
+             maxlength="6" placeholder="Los 6 dígitos">
+    </label>
+
     <label class="auth-campo">
       <span>Contraseña nueva</span>
       <div class="auth-input-ojo">
@@ -204,6 +209,34 @@
       <button type="submit" class="primary" id="clave-guardar">Guardar</button>
       <button type="button" id="clave-cerrar">✕ Cerrar</button>
     </div>
+
+    <p class="auth-cambiar" id="clave-cambiar-fila">
+      <span id="clave-cambiar-texto">¿No te acordás la actual?</span>
+      <button type="button" id="clave-cambiar">Mandame un código</button>
+    </p>
+  </form>
+</div>
+
+<div id="borrar-overlay" class="auth-overlay" style="display:none">
+  <form class="auth-modal" id="borrar-form" novalidate>
+    <h2>Eliminar <span>·</span> Mi cuenta</h2>
+    <p class="auth-sub">
+      Se borra tu cuenta y todo tu progreso: las materias, el planificador y la
+      carrera. No se puede deshacer y no hay forma de recuperarlo.
+    </p>
+
+    <label class="auth-campo">
+      <span>Escribí ELIMINAR para confirmar</span>
+      <input type="text" id="borrar-palabra" autocomplete="off" placeholder="ELIMINAR">
+    </label>
+
+    <p class="auth-error" id="borrar-error" role="alert"></p>
+    <p class="auth-ok" id="borrar-ok" role="status"></p>
+
+    <div class="auth-acciones">
+      <button type="button" class="primary" id="borrar-cerrar">✕ Mejor no</button>
+      <button type="submit" class="auth-peligro" id="borrar-confirmar">Eliminar</button>
+    </div>
   </form>
 </div>
 
@@ -215,7 +248,7 @@
     </p>
 
     <div class="auth-campo auth-solo-registro" id="auth-carreras-campo">
-      <span>¿Qué estudiás? <em>La primera es la principal</em></span>
+      <span>¿Qué estudiás?</span>
       <div class="auth-chips" id="auth-carreras"></div>
     </div>
     <label class="auth-campo auth-solo-registro" id="auth-nombre-campo">
