@@ -1,10 +1,12 @@
-// Chips para elegir carrera: una principal y, si hace las dos, una segunda.
+// Chips para elegir carrera: se pueden marcar todas las que curse, pero
+// siempre hay una principal.
 //
 // Se usa en dos lados con el mismo comportamiento: al crear la cuenta y en
 // "Mi cuenta". El orden importa y se ve: la primera dice PRINCIPAL, porque es
-// la que abre la app y la que cuenta en las estadísticas.
+// la que abre la app y la que cuenta en las estadísticas; las demás quedan
+// numeradas en el orden en que se eligieron.
 
-export function montarChips(cont, opciones, { max = 2, min = 0, alPasarse, alQuedarseCorto, alCambiar } = {}) {
+export function montarChips(cont, opciones, { max = Infinity, min = 0, alPasarse, alQuedarseCorto, alCambiar } = {}) {
   let elegidas = [];
 
   function pintar() {
@@ -12,10 +14,10 @@ export function montarChips(cont, opciones, { max = 2, min = 0, alPasarse, alQue
       const puesto = elegidas.indexOf(chip.dataset.valor);
       const orden = chip.querySelector('.auth-chip-orden');
       chip.classList.toggle('elegida', puesto >= 0);
-      orden.textContent = puesto === 0 ? 'principal' : puesto === 1 ? '2ª' : '';
+      orden.textContent = puesto === 0 ? 'principal' : puesto > 0 ? `${puesto + 1}ª` : '';
       chip.title = puesto === 0
         ? 'Tu carrera principal: es la que se abre al entrar'
-        : puesto > 0 ? 'Tu segunda carrera. Tocá la otra para hacerla principal.'
+        : puesto > 0 ? 'Sacá la principal para que esta tome su lugar'
         : 'Tocá para elegirla';
     }
   }

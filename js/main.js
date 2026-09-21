@@ -136,18 +136,13 @@ const TEXTOS = {
   },
 };
 
-// Los chips de "¿qué estudiás?". La primera elegida es la principal: es la que
-// se abre al entrar, y la que cuenta en las estadísticas de la carrera.
-const MAX_CARRERAS = 2;
+// Los chips de "¿qué estudiás?". Se pueden marcar todas las que curse; la
+// primera es la principal: la que se abre al entrar y la que manda en las
+// estadísticas de la carrera.
 let chipsRegistro = null;
 
 function initChips() {
   chipsRegistro = montarChips($('auth-carreras'), CARRERAS, {
-    max: MAX_CARRERAS,
-    alPasarse: max => {
-      $('auth-error').textContent =
-        `${max} carreras como máximo. Sacá una si querés cambiarla.`;
-    },
     alCambiar: () => { $('auth-error').textContent = ''; },
   });
 }
@@ -535,11 +530,6 @@ function initCuentaUI() {
 
   // Cambiar de carrera se aplica al toque: no hay botón de guardar para esto.
   chipsCuenta = montarChips($('cuenta-carreras'), CARRERAS, {
-    max: MAX_CARRERAS,
-    alPasarse: max => {
-      $('cuenta-error').textContent =
-        `${max} carreras como máximo. Sacá una si querés cambiarla.`;
-    },
     alCambiar: elegidas => {
       // Se puede desmarcar, pero una cuenta sin carrera no se guarda: hasta
       // que elija alguna, queda lo que ya estaba en la base.

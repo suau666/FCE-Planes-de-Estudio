@@ -57,13 +57,13 @@ create table if not exists perfiles (
   creado_en  timestamptz not null default now()
 );
 
--- Qué carrera (o dos) estudia cada uno. Se elige al crear la cuenta y es lo
--- que da el "cuánta gente hay en cada carrera". `orden` 1 es la principal: la
--- que se abre al entrar. Dos como máximo, y eso lo cuida el índice de abajo.
+-- Qué carreras estudia cada uno. Se eligen al crear la cuenta y es lo que da
+-- el "cuánta gente hay en cada carrera". `orden` 1 es la principal: la que se
+-- abre al entrar. El índice de abajo cuida que no haya dos con el mismo orden.
 create table if not exists perfil_carreras (
   usuario_id uuid not null references perfiles(id) on delete cascade,
   carrera_id text not null references carreras(id) on delete cascade,
-  orden      int  not null default 1 check (orden between 1 and 2),
+  orden      int  not null default 1 check (orden >= 1),
   primary key (usuario_id, carrera_id)
 );
 

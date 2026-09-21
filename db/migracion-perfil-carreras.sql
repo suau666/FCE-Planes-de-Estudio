@@ -7,7 +7,7 @@
 create table if not exists perfil_carreras (
   usuario_id uuid not null references perfiles(id) on delete cascade,
   carrera_id text not null references carreras(id) on delete cascade,
-  orden      int  not null default 1 check (orden between 1 and 2),
+  orden      int  not null default 1 check (orden >= 1),
   primary key (usuario_id, carrera_id)
 );
 

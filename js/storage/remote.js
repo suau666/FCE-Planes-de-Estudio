@@ -155,8 +155,8 @@ export function aFilas(uid, doc) {
     tema: doc.tema || 'white',
   };
 
-  // Dos como máximo: lo mismo que pide el formulario y que cuida la base.
-  const carreras = (doc.carreras || []).slice(0, 2).map((carreraId, i) => ({
+  // El orden es el que eligió: `orden` 1 es la principal.
+  const carreras = (doc.carreras || []).map((carreraId, i) => ({
     usuario_id: uid, carrera_id: carreraId, orden: i + 1,
   }));
 

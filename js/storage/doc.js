@@ -4,7 +4,7 @@
 export const DOC_VACIO = {
   version: 1,
   tema: 'white',
-  carreras: [],     // la que estudia, y una segunda si hace las dos
+  carreras: [],     // las que estudia; la primera es la principal
   carreraActiva: 'actuario',   // la última que miró, no la que estudia
   estados: {},      // código global o "carrera:optN" → estado
   porCarrera: {},   // id de carrera → { optNames, plan }
