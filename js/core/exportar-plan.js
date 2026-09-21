@@ -1,4 +1,5 @@
-// Llevarse el plan: como texto para pegarlo donde sea, o como imagen.
+// Llevarse el plan: copiado al portapapeles para pegarlo donde sea, o como
+// imagen para compartirla.
 //
 // La imagen se dibuja en un canvas a mano. Alcanza y sobra para una lista de
 // períodos con sus materias, y así no hace falta ninguna librería.
@@ -27,13 +28,13 @@ export function planEnTexto(carrera, periodos, plan, nombreDe) {
   const bloques = periodosConMaterias(periodos, plan, nombreDe);
   if (!bloques.length) return null;
 
-  const lineas = [`${carrera.nombre} · Plan de cuatrimestres`, ''];
+  const lineas = [`Plan de cuatrimestres · ${carrera.titulo} · FCE · UBA`, ''];
   for (const p of bloques) {
     lineas.push(`${p.label}:`);
-    for (const m of p.materias) lineas.push(`* ${m}`);
+    for (const m of p.materias) lineas.push(`• ${m}`);
     lineas.push('');
   }
-  return lineas.join('\n');
+  return lineas.join('\n').trimEnd();
 }
 
 function bajar(blob, nombreArchivo) {
@@ -49,11 +50,37 @@ function bajar(blob, nombreArchivo) {
 
 const archivoDe = (carrera, ext) => `plan-${carrera.id}-${new Date().toISOString().slice(0, 10)}.${ext}`;
 
-export function bajarTexto(carrera, periodos, plan, nombreDe) {
+// 'vacio' si no hay nada que copiar, 'ok' si se copió, 'error' si el
+// navegador no dejó tocar el portapapeles (pasa sin HTTPS o sin permiso).
+export async function copiarTexto(carrera, periodos, plan, nombreDe) {
   const texto = planEnTexto(carrera, periodos, plan, nombreDe);
-  if (!texto) return false;
-  bajar(new Blob([texto], { type: 'text/plain;charset=utf-8' }), archivoDe(carrera, 'txt'));
-  return true;
+  if (!texto) return 'vacio';
+
+  try {
+    await navigator.clipboard.writeText(texto);
+    return 'ok';
+  } catch {
+    return copiarAlaVieja(texto) ? 'ok' : 'error';
+  }
+}
+
+// Sin permiso para el portapapeles moderno queda este camino: un textarea
+// suelto, seleccionar y copiar.
+function copiarAlaVieja(texto) {
+  const ta = document.createElement('textarea');
+  ta.value = texto;
+  ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try {
+    ok = document.execCommand('copy');
+  } catch {
+    ok = false;
+  }
+  ta.remove();
+  return ok;
 }
 
 export function bajarImagen(carrera, periodos, plan, nombreDe) {
@@ -70,7 +97,7 @@ export function bajarImagen(carrera, periodos, plan, nombreDe) {
   const altoMateria = 26;
   const espacioEntre = 18;
 
-  let alto = margen + altoTitulo + 24;
+  let alto = margen + altoTitulo + 14;
   for (const p of bloques) alto += altoPeriodo + p.materias.length * altoMateria + espacioEntre;
   alto += margen - espacioEntre;
 
@@ -84,17 +111,19 @@ export function bajarImagen(carrera, periodos, plan, nombreDe) {
   ctx.fillRect(0, 0, ancho, alto);
   ctx.textBaseline = 'alphabetic';
 
+  // Un solo título, y si la carrera tiene nombre largo se achica la letra
+  // hasta que entre en el ancho en vez de cortarse.
+  const titulo = `Plan de cuatrimestres · ${carrera.titulo} · FCE · UBA`;
   let y = margen + 18;
   ctx.fillStyle = TINTA;
-  ctx.font = `800 22px ${FUENTE}`;
-  ctx.fillText('Plan de cuatrimestres', margen, y);
+  let cuerpo = 22;
+  do {
+    ctx.font = `800 ${cuerpo}px ${FUENTE}`;
+    cuerpo -= 1;
+  } while (ctx.measureText(titulo).width > ancho - margen * 2 && cuerpo > 12);
+  ctx.fillText(titulo, margen, y);
 
-  y += 20;
-  ctx.fillStyle = SUAVE;
-  ctx.font = `400 13px ${FUENTE}`;
-  ctx.fillText(`${carrera.nombre} · FCE · UBA`, margen, y);
-
-  y += 26;
+  y += 30;
   for (const p of bloques) {
     ctx.fillStyle = ACENTO;
     ctx.font = `700 15px ${FUENTE}`;

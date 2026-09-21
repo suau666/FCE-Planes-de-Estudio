@@ -91,17 +91,24 @@
         <div class="auto-menu-wrap" id="auto-menu-wrap">
           <button class="primary" id="auto-toggle">✦ Auto-acomodar</button>
           <div class="auto-menu" id="auto-menu" style="display:none">
-            <div class="auto-menu-label">Materias por cuatri</div>
-            <div class="auto-opt-row">
+            <div class="auto-menu-label">Materias por cuatrimestre</div>
+            <div class="auto-opt-row" id="auto-cuatri">
+              <button class="auto-opt" data-n="1">1</button>
               <button class="auto-opt" data-n="2">2</button>
               <button class="auto-opt active" data-n="3">3</button>
+              <button class="auto-opt" data-n="4">4</button>
             </div>
-            <label class="auto-check"><input type="checkbox" id="auto-intensivos"> Incluir intensivos</label>
+            <div class="auto-menu-label">Materias por intensivo</div>
+            <div class="auto-opt-row" id="auto-intensivos">
+              <button class="auto-opt active" data-n="0">0</button>
+              <button class="auto-opt" data-n="1">1</button>
+              <button class="auto-opt" data-n="2">2</button>
+            </div>
             <button class="auto-go" id="auto-go">Acomodar</button>
           </div>
         </div>
         <button id="planner-img">Guardar imagen</button>
-        <button id="planner-txt">Guardar texto</button>
+        <button id="planner-txt">Copiar texto</button>
         <button id="planner-clear">Limpiar</button>
         <button id="planner-close">✕ Cerrar</button>
       </div>

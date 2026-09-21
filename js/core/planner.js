@@ -10,7 +10,7 @@ import { store, slotDe, scheduleSave } from './state.js';
 import { abrirOverlay, cerrarOverlay } from './modal.js';
 import { keyOf, directPrereqs } from './rules.js';
 import { confirmar } from './confirmar.js';
-import { bajarTexto, bajarImagen } from './exportar-plan.js';
+import { copiarTexto, bajarImagen } from './exportar-plan.js';
 
 const CAP_CUATRI = 4, CAP_INTENSIVO = 2;
 
@@ -25,6 +25,7 @@ let carrera = null;
 let plan = {};              // id de materia → clave de período ("2026-2C")
 let periodos = [];          // [{key,label,intensivo,cap}]
 let autoMaxPerCuatri = 3;
+let autoMaxPorIntensivo = 0;
 
 const nombre = id => {
   const m = carrera.materias[id];
@@ -122,7 +123,7 @@ function unplace(id) {
 
 // ── Auto-acomodo ─────────────────────────────────────────────────────────────
 // Respeta lo ya puesto a mano y arranca por las materias que más destraban.
-function autoArrange(maxPer, useIntensivos) {
+function autoArrange(maxPer, maxPorIntensivo) {
   const memo = {};
   const dependientes = id => {
     if (memo[id]) return memo[id];
@@ -146,7 +147,7 @@ function autoArrange(maxPer, useIntensivos) {
       periodos = buildPeriods(periodos.filter(p => !p.intensivo).length + 1);
     }
     const per = periodos[pi];
-    const cap = per.intensivo ? (useIntensivos ? CAP_INTENSIVO : 0) : maxPer;
+    const cap = per.intensivo ? Math.min(maxPorIntensivo, CAP_INTENSIVO) : maxPer;
     if (cap > 0) {
       let puso = true;
       while (puso && periodCount(per.key) < cap) {
@@ -339,17 +340,24 @@ export function initPlannerUI() {
     m.style.display = m.style.display === 'none' ? 'flex' : 'none';
   });
 
-  document.querySelectorAll('.auto-opt').forEach(b => {
-    b.addEventListener('click', () => {
-      autoMaxPerCuatri = +b.dataset.n;
-      document.querySelectorAll('.auto-opt')
-        .forEach(x => x.classList.toggle('active', x === b));
+  // Dos filas de botones: cuántas materias por cuatrimestre (1 a 4) y cuántas
+  // por intensivo (0 a 2, donde 0 es no usarlos).
+  const grupo = (contId, alElegir) => {
+    const cont = document.getElementById(contId);
+    cont.querySelectorAll('.auto-opt').forEach(b => {
+      b.addEventListener('click', () => {
+        alElegir(+b.dataset.n);
+        cont.querySelectorAll('.auto-opt')
+          .forEach(x => x.classList.toggle('active', x === b));
+      });
     });
-  });
+  };
+  grupo('auto-cuatri', n => { autoMaxPerCuatri = n; });
+  grupo('auto-intensivos', n => { autoMaxPorIntensivo = n; });
 
   document.getElementById('auto-go').addEventListener('click', () => {
     menu().style.display = 'none';
-    autoArrange(autoMaxPerCuatri, document.getElementById('auto-intensivos').checked);
+    autoArrange(autoMaxPerCuatri, autoMaxPorIntensivo);
   });
 
   document.getElementById('planner-clear').addEventListener('click', async () => {
@@ -368,15 +376,16 @@ export function initPlannerUI() {
   });
 
   // Llevarse el plan afuera de la app.
-  document.getElementById('planner-txt').addEventListener('click', () => {
-    if (!bajarTexto(carrera, periodos, plan, nombre)) {
-      toast('Todavía no acomodaste ninguna materia');
-    }
+  document.getElementById('planner-txt').addEventListener('click', async () => {
+    const r = await copiarTexto(carrera, periodos, plan, nombre);
+    toast(r === 'vacio' ? 'Acomodá al menos una materia para poder copiarlo'
+        : r === 'ok' ? 'Plan copiado al portapapeles'
+        : 'No pude copiarlo: el navegador no me dejó usar el portapapeles');
   });
 
   document.getElementById('planner-img').addEventListener('click', () => {
     if (!bajarImagen(carrera, periodos, plan, nombre)) {
-      toast('Todavía no acomodaste ninguna materia');
+      toast('Acomodá al menos una materia para poder guardarla');
     }
   });
 
