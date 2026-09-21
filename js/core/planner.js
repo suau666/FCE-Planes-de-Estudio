@@ -9,6 +9,8 @@
 import { store, slotDe, scheduleSave } from './state.js';
 import { abrirOverlay, cerrarOverlay } from './modal.js';
 import { keyOf, directPrereqs } from './rules.js';
+import { confirmar } from './confirmar.js';
+import { bajarTexto, bajarImagen } from './exportar-plan.js';
 
 const CAP_CUATRI = 4, CAP_INTENSIVO = 2;
 
@@ -350,11 +352,32 @@ export function initPlannerUI() {
     autoArrange(autoMaxPerCuatri, document.getElementById('auto-intensivos').checked);
   });
 
-  document.getElementById('planner-clear').addEventListener('click', () => {
+  document.getElementById('planner-clear').addEventListener('click', async () => {
     if (!Object.keys(plan).length) return;
-    if (!confirm('¿Vaciar todo el plan?')) return;
+    const cuantas = Object.keys(plan).length;
+    const ok = await confirmar({
+      titulo: '¿Vaciar el plan?',
+      texto: `Se van a soltar las ${cuantas} materias que acomodaste. Las `
+        + 'materias aprobadas y regulares no se tocan.',
+      aceptar: 'Vaciar',
+      peligro: true,
+    });
+    if (!ok) return;
     for (const id in plan) delete plan[id];
     renderPlanner(); scheduleSave();
+  });
+
+  // Llevarse el plan afuera de la app.
+  document.getElementById('planner-txt').addEventListener('click', () => {
+    if (!bajarTexto(carrera, periodos, plan, nombre)) {
+      toast('Todavía no acomodaste ninguna materia');
+    }
+  });
+
+  document.getElementById('planner-img').addEventListener('click', () => {
+    if (!bajarImagen(carrera, periodos, plan, nombre)) {
+      toast('Todavía no acomodaste ninguna materia');
+    }
   });
 
   document.getElementById('planner-close').addEventListener('click', closePlanner);

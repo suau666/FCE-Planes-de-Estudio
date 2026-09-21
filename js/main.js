@@ -451,12 +451,12 @@ function pintarModoClave() {
   const conCodigo = modoClave === CON_CODIGO;
   const mail = getUser()?.email || 'tu mail';
 
-  $('clave-titulo').innerHTML = conCodigo
-    ? 'Tu contraseña <span>·</span> Con un código'
-    : 'Cambiar <span>·</span> Mi contraseña';
+  $('clave-titulo').textContent = conCodigo ? 'Recuperar contraseña' : 'Cambiar mi contraseña';
+  // Con código hay algo que explicar (a qué mail fue); con la contraseña
+  // actual, los campos se explican solos.
   $('clave-sub').textContent = conCodigo
     ? `Te mandamos un código de 6 dígitos a ${mail}. Ponelo acá junto con la contraseña que quieras.`
-    : 'Para cambiarla hay que saber la de ahora.';
+    : '';
 
   $('clave-actual-campo').style.display = conCodigo ? 'none' : '';
   $('clave-codigo-campo').style.display = conCodigo ? '' : 'none';

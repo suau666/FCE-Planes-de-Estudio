@@ -86,7 +86,7 @@
 <div id="planner-overlay" class="planner-overlay" style="display:none">
   <div class="planner-modal">
     <div class="planner-head">
-      <h2>Planificador <span>·</span> Cuatrimestres</h2>
+      <h2>Planificador de cuatrimestres</h2>
       <div class="planner-actions">
         <div class="auto-menu-wrap" id="auto-menu-wrap">
           <button class="primary" id="auto-toggle">✦ Auto-acomodar</button>
@@ -100,6 +100,8 @@
             <button class="auto-go" id="auto-go">Acomodar</button>
           </div>
         </div>
+        <button id="planner-img">Guardar imagen</button>
+        <button id="planner-txt">Guardar texto</button>
         <button id="planner-clear">Limpiar</button>
         <button id="planner-close">✕ Cerrar</button>
       </div>
@@ -170,7 +172,7 @@
 
 <div id="clave-overlay" class="auth-overlay" style="display:none">
   <form class="auth-modal" id="clave-form" novalidate>
-    <h2 id="clave-titulo">Cambiar <span>·</span> Mi contraseña</h2>
+    <h2 id="clave-titulo">Cambiar mi contraseña</h2>
     <p class="auth-sub" id="clave-sub"></p>
 
     <label class="auth-campo" id="clave-actual-campo">
@@ -185,7 +187,7 @@
     <label class="auth-campo" id="clave-codigo-campo" style="display:none">
       <span>Código del mail</span>
       <input type="text" id="clave-codigo" inputmode="numeric" autocomplete="one-time-code"
-             maxlength="6" placeholder="Los 6 dígitos">
+             maxlength="6" placeholder="X X X X X X">
     </label>
 
     <label class="auth-campo">
@@ -217,6 +219,20 @@
       <button type="button" id="clave-cambiar">Mandame un código</button>
     </p>
   </form>
+</div>
+
+<div id="confirmar-overlay" class="auth-overlay" style="display:none">
+  <div class="auth-modal">
+    <div class="auth-cabecera">
+      <h2 id="confirmar-titulo"></h2>
+      <button type="button" class="auth-x" id="confirmar-x"></button>
+    </div>
+    <p class="auth-sub" id="confirmar-texto"></p>
+    <div class="auth-acciones">
+      <button type="button" id="confirmar-no">Mejor no</button>
+      <button type="button" class="primary" id="confirmar-si">Sí</button>
+    </div>
+  </div>
 </div>
 
 <div id="exito-overlay" class="auth-overlay" style="display:none">
@@ -298,7 +314,7 @@
     <label class="auth-campo auth-solo-codigo" id="auth-codigo-campo">
       <span>Código del mail</span>
       <input type="text" id="auth-codigo" inputmode="numeric" autocomplete="one-time-code"
-             maxlength="6" placeholder="Los 6 dígitos">
+             maxlength="6" placeholder="X X X X X X">
     </label>
 
     <p class="auth-error" id="auth-error" role="alert"></p>
