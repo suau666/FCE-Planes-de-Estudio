@@ -93,8 +93,13 @@ function renderTramos(carrera) {
     titulo.innerHTML = tramo.label;
     label.append(titulo, botonDeTramo(carrera, tramo));
 
+    // Las columnas salen de cuántas materias tiene el tramo, no de un número
+    // fijo: con cinco materias, antes quedaba un hueco al final de la fila.
+    // `cols` sigue siendo el techo, para que un tramo largo parta en dos filas.
     const grid = document.createElement('div');
-    grid.className = `section-subjects cols-${tramo.cols || 6}`;
+    grid.className = 'section-subjects';
+    const columnas = Math.min(tramo.ids.length, tramo.cols || 6);
+    grid.style.gridTemplateColumns = `repeat(${columnas}, 1fr)`;
     tramo.ids.forEach(id => grid.appendChild(makeCard(carrera, id)));
 
     row.append(label, grid);
